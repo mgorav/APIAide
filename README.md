@@ -22,7 +22,13 @@ This handles real-world API complexity. Next, we cover the techniques powering A
 
 ## Mathematical Foundations
 
-APIAide employs mathematical models for robust planning, matching APIs, and response parsing:
+APIAide harnesses mathematical models to power its ability to interact with complex real-world APIs reliably. Specifically, Markov Decision Processes enable optimized planning, vector embeddings facilitate accurate API matching, and policy learning parsers handle tricky JSON responses.
+
+These techniques allow APIAide to break down instructions, determine optimal sequences of API calls, configure parameters correctly, and extract information from outputs. The formal abstractions provide provable capabilities to extrapolate intelligently to new situations based on prior experiences.
+
+The mathematical foundations supply APIAide the rigor required to operate at industrial grade. The composable structure also allows improving the specialized modules independently.
+
+Enabled by mathematics, APIAide can take on intricate multi-step interactions with production APIs that otherwise remain out of reach. Let us explore its technical core.
 
 ### Markov Decision Processes for Effective Decomposition
 
@@ -146,6 +152,27 @@ Intuitively, parameter updates nudge the policy towards token sequences that res
 By formulizing as a reinforcement learning problem, the parser can handle variability in JSON responses and improve over time through accrued experiences.
 
 The learned policy enables optimally extracting information from tricky API responses.
+
+### Applying Formal Models for Integrating OpenAPIs
+
+The mathematical models enable standardized integration by providing common semantic frameworks for information exchange between components.
+
+For example, the Markov Decision Process powering the planner provides provable ways to translate natural language instructions into plan state representations. This allows binding external state transition systems like ChatGPT API.
+
+Similarly, the vector embeddings facilitate matching text to API sequences across vocabulary gaps. This technique allows discovering alignments between APIAide's internal actions and operation specifications exposed by external APIs.
+
+Concretely, APIAide utilizes OpenAPIs from models like ChatGPT providing OpenAPI specifications for capabilities like text completions.
+
+The interaction workflow becomes:
+
+- **User Instruction**: Processed by APIAide Core
+- **Mapped to OAS**: Via ontologies to ChatGPT's API Schema
+- **ChatGPT Invocation**: Executed via generated bindings
+- **Response Parsing**: Results consolidated back
+
+Additionally, APIAide's modular architecture allows injecting other OpenAPIs, like image tagging systems exposing vector embedding based APIs.
+
+By leaning on community standards like OpenAPI coupled with mathematical models acting as connective tissue, APIAide facilitates systemic integration rather than domain-specific optimization.
 
 ## System Architecture
 
