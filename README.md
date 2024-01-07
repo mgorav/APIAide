@@ -61,6 +61,56 @@ This allows the **Planner** module to learn an optimal policy to break down inst
 
 The policy maximizes the long term cumulative reward of fulfilling user instructions through dynamic programming over API call outcomes.
 
+> NOTE Generic Explanation
+>
+> Markov decision processes (MDPs) are a mathematical framework for modeling decision making under uncertainty. They are useful for problems that involve sequential decision making, where the current state and action affect future states.
+> The key components of an MDP are:
+> - States (S): The set of possible states the process can be in. For example, in a robot navigation problem, the states could be the robot's x,y location.
+> - Actions (A): The set of possible actions that can be taken in each state. For example, the robot's actions could be to move left, right, up or down.
+> - Transition probabilities (P): The probability of transitioning from state s to s' under action a. Often represented as P(s'|s,a).
+> - Rewards (R): The reward received after transitioning from state s to s' under action a. Represented as R(s,a,s'). The agent aims to maximize cumulative reward.
+> - Discount factor (γ): A factor between 0 and 1 that determines the importance of future rewards. 0 makes the agent focus only on immediate rewards, while values approaching 1 make it strive for long-term high rewards.
+> The agent's goal is to find the optimal policy π* that maximizes expected cumulative discounted rewards:
+> π* = argmax π ∑t=0∞ γt R(st,at,st+1)
+> Where the actions at are selected according to policy π. MDPs can be solved exactly using dynamic programming algorithms like value iteration and policy iteration. They can also be approximated using reinforcement learning algorithms like Q-learning.
+
+**_Example_**
+States:
+
+S = {s1, s2, s3, s4}
+
+s1: User profile data incomplete  
+s2: User profile data complete
+s3: Product recommendations incomplete
+s4: Product recommendations complete
+
+Actions:
+
+A = {a1, a2, a3, a4}
+
+a1: Call user profile API
+a2: Call user activity API  
+a3: Call product recommendation API
+a4: Filter products based on user profile
+
+Transition Probabilities:
+
+P(s2|s1,a1) = 0.9 // Get profile data
+P(s2|s1,a2) = 0.7 // Get activity data
+
+P(s3|s2,a3) = 0.8 // Get recommended products
+P(s4|s3,a4) = 0.9 // Filter products
+
+Rewards:
+
+R(s2) = 10 // Reward for complete user profile
+R(s4) = 40 // Reward for tailored recommendations
+
+γ = 0.8 // Prioritize long-term rewards
+
+This models the process of orchestrating user profile APIs, recommendation APIs, and product filtering to provide personalized ecommerce recommendations. The agent learns to maximize the long-term reward through optimal API sequences.
+
+
 ### Leveraging Embeddings for Optimal API Matching
 
 Embeddings are dense vector representations that encode semantics of text sequences. APIAide's API Selector module uses embeddings to match user sub-tasks to optimal API sequences.
@@ -109,6 +159,44 @@ This semantic matching retrieves the API call sequence best encoding the intent 
 
 So vector similarities between embedded spaces act as the substrate for APIAide's logical planning.
 
+**_Example_**
+
+Here is an example of using embeddings for API sequence matching in an ecommerce recommendation system:
+
+**Sub-tasks:**
+
+p1: "Get user purchase history"
+p2: "Retrieve product catalog"
+p3: "Filter products by category"
+
+**API Sequences:**
+
+a1: "User API -> Purchases API"
+a2: "Catalog API -> Products API"
+a3: "Products API -> Category Filter API"
+
+**Embeddings Generation:**
+
+Sub-task and API sequence embeddings are generated using sentence-transformers.
+
+p1, p2, p3, a1, a2, a3 ∈ R512
+
+**Similarity Computation:**
+
+cos(p1, a1) = 0.89
+cos(p2, a2) = 0.94
+cos(p3, a3) = 0.82
+
+**API Selection:**
+
+Select API sequences with maximum cosine similarity:
+
+p1 mapped to a1
+p2 mapped to a2
+p3 mapped to a3
+
+This allows matching natural language sub-tasks to optimal API sequences using semantic similarity of learned embeddings, enabling contextual recommendation orchestration.
+
 ### Parser Policy Learning for Optimal Code Generation
 
 The parser learns a parameterized policy for generating Python code that extracts responses accurately.
@@ -153,6 +241,54 @@ By formulizing as a reinforcement learning problem, the parser can handle variab
 
 The learned policy enables optimally extracting information from tricky API responses.
 
+**_Example_**
+
+Here is an example of using policy learning for response parsing in an ecommerce product API:
+
+**Policy Definition**
+
+πθ maps product response schema and extraction query to parsing code
+
+**State**
+
+Product response schema:
+
+```
+{
+  "id": int,
+  "name": str, 
+  "price": float,
+  "categories": [str] 
+}
+```
+
+Extraction query: "Get product categories"
+
+**Actions**
+
+Generate parsing code tokens:
+
+categories = response["categories"]
+
+**Rewards**
+
++1 if extraction works on new responses, -1 if fails
+
+**Policy Optimization**
+
+Use REINFORCE to maximize extraction accuracy:
+
+```
+∇θ J(πθ) = E[ ∇θ log πθ(a|s) * reward ] 
+```
+
+**Benefits**
+
+- Handles variability in nested JSON responses
+- Improves over time as API usage accrues
+
+This allows reliably extracting relevant fields from ecommerce API outputs.
+
 ### Applying Formal Models for Integrating OpenAPIs
 
 The mathematical models enable standardized integration by providing common semantic frameworks for information exchange between components.
@@ -173,6 +309,47 @@ The interaction workflow becomes:
 Additionally, APIAide's modular architecture allows injecting other OpenAPIs, like image tagging systems exposing vector embedding based APIs.
 
 By leaning on community standards like OpenAPI coupled with mathematical models acting as connective tissue, APIAide facilitates systemic integration rather than domain-specific optimization.
+
+**_Example_**
+
+Continuing the ecommerce example:
+
+**Integrating ChatGPT API**
+
+1. User instruction: "Explain this product to potential buyers"
+
+2. APIAide core decomposes instruction
+
+3. ChatGPT API spec exposes text generation endpoint
+
+4. Bind to OpenAPI operation:
+
+```
+prompt = product_description 
+completion = chatgpt.generate(prompt)
+```
+
+5. Invoke API with product details
+
+6. Parse and return generated text
+
+**Integrating Image Tagging API**
+
+1. User: "Categorize these product images"
+
+2. APIAide prepares image embeddings
+
+3. Vision API has clustering endpoint accepting vectors
+
+4. Discover alignment and bind API:
+
+```
+clusters = vision.cluster_images(image_embeddings)
+```
+
+5. Pass image vectors and parse clusters
+
+By leveraging mathematical models, APIAide can integrate APIs like ChatGPT and vision APIs to accomplish ecommerce tasks.
 
 ## System Architecture
 
