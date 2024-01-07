@@ -166,28 +166,6 @@ graph TD
 
 Tasks are divided into planning, API selection, calling and parsing for separation of concerns.
 
-
-### Coarse-to-fine Online Planning
-
-Instead of static planning, APIAide employs an iterative coarse-to-fine planning approach to handle dynamic situations:
-
-```mermaid
-sequenceDiagram
-    User->>P: User Instruction
-    P->>S: High-Level <br> Sub-Task
-    S->>C: Specific <br> API Call Sequence
-    C->>R: Invoke API
-    R->>P: Execution <br> Outcome
-    P->>P: Revise Next <br> Sub-Task
-```   
-
-The planner P first creates a high-level sub-task. The API selector S then builds a detailed API sequence for it.
-
-Based on execution outcomes, the next sub-task is dynamically adjusted, providing flexibility to handle unforeseen scenarios.
-
-
-This can be inserted after the overall architecture:
-
 ### API Plan Execution
 
 The executor module handles executing the API sequence:
