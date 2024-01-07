@@ -386,6 +386,8 @@ The caller CC handles authentication, parameterization to invoke the REST API RR
 
 The parser PP then processes the API response to extract relevant information.
 
+> The API Caller module uses annotation driven CGLIB proxying to automatically instrument API calls with appropriate prompts and headers required for each endpoint. This avoids manual configuration and customization for each API client.
+
 ### Multi-Level Planning Dynamically Adapts
 
 Instead of creating all required API sequences upfront, APIAide employs a hierarchical planning approach with multiple levels of abstraction.
@@ -500,14 +502,14 @@ This blueprint combines stability and intelligence to offer a robust API interac
 
 APIAide employs a robust tech stack to offer stability, scalability and ease of use.
 
-| Layer | Technology | Responsibilities |
-|-|-|-|  
-| Platform | Java, Spring Boot | Scale, concurrency, monitoring |   
-| Delivery | Kubernetes, Docker | CI/CD, high availability |
-| Intelligence | LangChain, LLMs | Planning, parsing capabilities |
-| Data | MongoDB, Elasticsearch | Storage, analysis ready data |
-| Infrastructure | AWS, GCP | Reliability, security, compliance |
-
+| Layer | Technology                    | Responsibilities |
+|-|-------------------------------|-|  
+| Platform | Java, Spring Boot             | Scale, concurrency, monitoring |   
+| Delivery | Kubernetes, Docker            | CI/CD, high availability |
+| Intelligence | LangChain, LLMs (LangChain4j) | Planning, parsing capabilities |
+| Data | MongoDB, Elasticsearch        | Storage, analysis ready data |
+| Infrastructure | AWS, GCP                      | Reliability, security, compliance |
+| Instrumentation | CGLIB                         | Automated API client prompting |
 **Platform Layer**
 
 Java and Spring Boot provide a high performance backend with dependency injection, web servicing and operational tooling baked in.
