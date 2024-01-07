@@ -510,6 +510,7 @@ APIAide employs a robust tech stack to offer stability, scalability and ease of 
 | Data | MongoDB, Elasticsearch        | Storage, analysis ready data |
 | Infrastructure | AWS, GCP                      | Reliability, security, compliance |
 | Instrumentation | CGLIB                         | Automated API client prompting |
+
 **Platform Layer**
 
 Java and Spring Boot provide a high performance backend with dependency injection, web servicing and operational tooling baked in.
