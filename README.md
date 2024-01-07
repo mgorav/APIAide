@@ -88,10 +88,10 @@ Actions:
 
 A = {a1, a2, a3, a4}
 
-a1: Call user profile API
-a2: Call user activity API  
-a3: Call product recommendation API
-a4: Filter products based on user profile
+1. a1: Call user profile API
+2. a2: Call user activity API  
+3. a3: Call product recommendation API
+4. a4: Filter products based on user profile
 
 Transition Probabilities:
 
