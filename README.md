@@ -167,6 +167,43 @@ graph TD
 Tasks are divided into planning, API selection, calling and parsing for separation of concerns.
 
 
+### Coarse-to-fine Online Planning
+
+Instead of static planning, APIAide employs an iterative coarse-to-fine planning approach to handle dynamic situations:
+
+```mermaid
+sequenceDiagram
+    User->>P: User Instruction
+    P->>S: High-Level <br> Sub-Task
+    S->>C: Specific <br> API Call Sequence
+    C->>R: Invoke API
+    R->>P: Execution <br> Outcome
+    P->>P: Revise Next <br> Sub-Task
+```   
+
+The planner P first creates a high-level sub-task. The API selector S then builds a detailed API sequence for it.
+
+Based on execution outcomes, the next sub-task is dynamically adjusted, providing flexibility to handle unforeseen scenarios.
+
+
+This can be inserted after the overall architecture:
+
+### API Plan Execution
+
+The executor module handles executing the API sequence:
+
+```mermaid
+graph TD
+    APISeq-->CC{API <br> Caller}
+    CC-->RR{REST <br> API}
+    RR-->PP{Response <br> Parser}
+    PP-->CC
+```
+
+The caller CC handles authentication, parameterization to invoke the REST API RR.
+
+The parser PP then processes the API response to extract relevant information.
+
 ### Multi-Level Planning Dynamically Adapts
 
 Instead of creating all required API sequences upfront, APIAide employs a hierarchical planning approach with multiple levels of abstraction.
@@ -311,57 +348,55 @@ By leveraging cloud infrastructure, the solution can meet security, compliance a
 
 Together these layers deliver an enterprise-grade platform for deploying APIAide capabilities for production usages with minimal risks.
 
+## Assessing Generalization Across Complexity Frontiers
 
-## Rigorous Testing with Real-World Datasets
+APIAide is evaluated across diverse dimensions spanning varying levels of complexity using real-world Spotify and TMDB APIs.
 
-APIAide is evaluated on two production API datasets - TMDB and Spotify, covering movie and music domains.
+**Production-Grade APIs**
 
-**Datasets**
+- TMDB: Movie database with 54 endpoints
+- Spotify: Music platform with 40 APIs
 
-- 100+ human annotated instructions for each API
-- Instructions verify capability to handle multi-step workflows
-- Sequence of ground truth API calls provided for each instruction
+**Testing Corpus**
 
-**TMDB API**
+100+ human annotated instructions covering:
 
-- 54 endpoints like search, discover, trending etc
-- OpenAPI Specification based
-- Models core API data model
+- Query complexity levels
+- API combinations required
+- Parameter configurations
 
-**Spotify API**
+**Evaluation Dimensions**
 
-- 40 endpoints for search, recommendations, library, playback control
-- Also has OpenAPI Specification
-- Covers main music streaming capabilities
+- **Accuracy** across query complexity spectrum
+- **Planning Efficiency** via gap between predicted and actual API sequences
+- **Scalability** by increasing number of callable APIs
 
-**Evaluation Metrics**
+**Analysis Framework**
 
-- **Correct API Call Chains**: % of predicted chains matching ground truth
-- **End-to-End Success Rate**: % test cases with correct final output
+By tracing performance gradients instead of aggregate scores, granular insights emerge on strengths and areas needing improvement.
 
-Additional metrics like inference latency, explainability are also measured.
+For example, decrement in success rate for longer instruction chains reveals challenges to scale to complex workflows.
 
-## Results Summary
+**Results Summary**
 
-| Metric | Outcome | 
-|-|-|
+| Metric | Outcome |
+|-|-|  
 | Correct API Call Chains | 79% |
 | End-to-End Success Rate | 75% |
 
-The strong results highlight APIAide's ability to handle complexity of instructions and API workflows in real-world settings.
+**Use Case**
 
-### Sample Success Case
+*Create playlist "Love Coldplay" with most popular songs by artist*
 
-**Instruction**: *Create playlist "Love Coldplay" with most popular songs by artist*
+**Key Takeaways**
 
-**Predicted APIs**:
+✅ Assesses across complexity frontiers spanning simplicity to intricate multi-hop scenarios
 
-1. Search artist
-2. Get top tracks
-3. Create playlist
-4. Add tracks to playlist
+✅ Quantifies scaling behavior on critical dimensions
 
-**Ground Truth**: Same API sequence
+✅ Provides confidence in handling real-world production complexity
+
+The rigorous methodology evaluates the spectrum of capabilities required in deployment - understanding, planning, configuring and extracting information from APIs.
 
 ## Future Work
 
@@ -372,8 +407,6 @@ While results are encouraging, challenges remain:
 - Blackbox failure modes of LLMs
 
 Continued research across model design, testing and transparency is required to make systems like APIAide robust enough for production use.
-
-Here is an added section on potential use cases across industries:
 
 ## High-Impact Application Areas
 
