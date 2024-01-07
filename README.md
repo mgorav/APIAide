@@ -12,10 +12,10 @@ Interacting with production APIs has challenges like:
 
 APIAide augments LLMs to overcome these via four capabilities:
 
-**REST API Comprehension:** Ingest OpenAPI specifications for LLMs to understand API semantics
-**Task Decomposition:** Break down instructions into coherent API call sequences using learned policies
-**API Parameterization:** Handle auth, arguments to correctly invoke APIs
-**Response Parsing:** Reliably extract information from API outputs using response schemas
+* **REST API Comprehension:** Ingest OpenAPI specifications for LLMs to understand API semantics
+* **Task Decomposition:** Break down instructions into coherent API call sequences using learned policies
+* **API Parameterization:** Handle auth, arguments to correctly invoke APIs
+* **Response Parsing:** Reliably extract information from API outputs using response schemas
 
 This handles real-world API complexity. Next, we cover the techniques powering APIAide.
 
