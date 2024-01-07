@@ -277,6 +277,41 @@ The workflow is:
 This blueprint combines stability and intelligence to offer a robust API interaction platform.
 
 
+## Technology Stack Powering APIAide
+
+APIAide employs a robust tech stack to offer stability, scalability and ease of use.
+
+| Layer | Technology | Responsibilities |
+|-|-|-|  
+| Platform | Java, Spring Boot | Scale, concurrency, monitoring |   
+| Delivery | Kubernetes, Docker | CI/CD, high availability |
+| Intelligence | LangChain, LLMs | Planning, parsing capabilities |
+| Data | MongoDB, Elasticsearch | Storage, analysis ready data |
+| Infrastructure | AWS, GCP | Reliability, security, compliance |
+
+**Platform Layer**
+
+Java and Spring Boot provide a high performance backend with dependency injection, web servicing and operational tooling baked in.
+
+**Delivery Layer**
+
+Containerized deployment on Kubernetes clusters provides portability across cloud providers while handling scale and uptime through infra automation.
+
+**Intelligence Layer**
+
+Framework like LangChain offer a clean interface for large language models to drive planning and response parsing logic.
+
+**Data Layer**
+
+Managed document stores like MongoDB and search engines like Elasticsearch provide the data storage and analytical capabilities.
+
+**Infrastructure Layer**
+
+By leveraging cloud infrastructure, the solution can meet security, compliance and reliability requirements out-of-the-box without own hosting.
+
+Together these layers deliver an enterprise-grade platform for deploying APIAide capabilities for production usages with minimal risks.
+
+
 ## Rigorous Testing with Real-World Datasets
 
 APIAide is evaluated on two production API datasets - TMDB and Spotify, covering movie and music domains.
