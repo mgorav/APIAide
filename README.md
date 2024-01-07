@@ -1,1 +1,439 @@
-# APIAide
+# APIAide: Connecting Large Language Models with REST APIs
+
+## Introduction
+
+APIAide enables large language models (LLMs) to understand OpenAPI specifications of REST APIs and make API calls to accomplish complex user instructions.
+
+Interacting with production APIs has challenges like:
+
+- Consuming extensive documentation across parameters, schemas
+- Planning optimal sequences of API calls
+- Handling authentication, marshaling arguments, parsing tricky responses
+
+APIAide augments LLMs to overcome these via four capabilities:
+
+**REST API Comprehension:** Ingest OpenAPI specifications for LLMs to understand API semantics
+**Task Decomposition:** Break down instructions into coherent API call sequences using learned policies
+**API Parameterization:** Handle auth, arguments to correctly invoke APIs
+**Response Parsing:** Reliably extract information from API outputs using response schemas
+
+This handles real-world API complexity. Next, we cover the techniques powering APIAide.
+
+
+## Mathematical Foundations
+
+APIAide employs mathematical models for robust planning, matching APIs, and response parsing:
+
+### Markov Decision Processes for Effective Decomposition
+
+Markov Decision Process (MDP) provides a mathematical framework for modeling decision making in situations where outcomes are partly random and partly under the control of a decision maker. It enables optimizing policies to maximize reward.
+
+An MDP is defined by:
+
+- **States (s)**: Represent the current state of the environment
+- **Actions (a)**: Choices available to the decision maker in each state
+- **Transition Function (P(s'|s,a))**: Probability of transitioning to next state s' by taking action a in current state s
+- **Reward Function (R(s,a))**: Specifies scalar reward r for state s after action a
+- **Discount Factor (γ)**: Controls priority for current vs future rewards
+
+The aim is to learn a policy π(a|s) that decides the action a in state s, by maximizing cumulative discounted reward:
+
+```
+π* = argmaxπ ∑ P(s′|s, a) [R(s,a) + γV(s')]
+```
+
+Where V(s) is the value function that recursively accumulates rewards from current state onward per policy π.
+
+In APIAide, the MDP formulation is:
+
+- **States:** Encode partial progress on user's instruction
+- **Actions:** Generate next natural language sub-task
+- **Transition Function:** Depends on environment's API call outcomes
+- **Reward:** +1 for successfully completing instruction, 0 otherwise
+
+This allows the **Planner** module to learn an optimal policy to break down instructions into coherent sequences of sub-tasks for efficient API usage.
+
+The policy maximizes the long term cumulative reward of fulfilling user instructions through dynamic programming over API call outcomes.
+
+### Leveraging Embeddings for Optimal API Matching
+
+Embeddings are dense vector representations that encode semantics of text sequences. APIAide's API Selector module uses embeddings to match user sub-tasks to optimal API sequences.
+
+**Embeddings Generation**
+
+Embeddings are generated for:
+
+- **Sub-tasks (p)**: Encodes user's natural language sub-task intent
+- **API Sequences (a)**: Encodes API call chains based on OpenAPI spec
+
+These embeddings are extracted from the large language model using mean-pooling operation over token embeddings.
+
+```
+p, a ∈ Rd
+```
+
+Where,
+- **d**: Embedding dimension size (typical values of 512, 768, 1024)
+
+**Similarity Computation**
+
+Cosine similarity between sub-task embedding ***p*** and API sequence embedding ***a*** is then calculated as:
+
+```
+similarity = cos(θ) = (p.a) / (||p||.||a||)
+```
+
+Where θ is the angle between the vectors p and a.
+
+**API Selection**
+
+The API sequence ã with maximum cosine similarity to the sub-task is selected:
+
+```
+ã = argmaxa cos(p, a)
+```
+
+This semantic matching retrieves the API call sequence best encoding the intent of the natural language sub-task.
+
+**Key Benefits**
+
+- Handles vocabulary mismatch between sub-tasks and APIs
+- Understands conceptual similarities
+- Robust to minor language variations
+
+So vector similarities between embedded spaces act as the substrate for APIAide's logical planning.
+
+### Parser Policy Learning for Optimal Code Generation
+
+The parser learns a parameterized policy for generating Python code that extracts responses accurately.
+
+**Policy Definition**
+
+The policy π′θ is learned using parameters θ. It maps the response schema S and query q to parsing code c:
+
+```
+c = π'θ(S, q)
+```
+
+**Reinforcement Learning Formulation**
+
+Policy gradient reinforcement learning is employed to optimize this policy by maximizing a reward.
+
+The key components are:
+
+- **State:** Response schema S, query q
+- **Action:** Generate parsing code tokens
+- **Reward:** Execution accuracy on unseen responses
+
+**Policy Gradient Objective**
+
+Mathematically, the parser maximizes the expected cumulative reward J using gradient ascent on policy parameters θ:
+
+```
+∇θ J(π′θ) = E [∇θ log π'θ(at|st) Rt]
+```
+
+Where,
+
+- t indexes token generation timesteps when creating parsing code
+- st is state, at is action, rt is reward at timestep t
+- Rt is cumulative future reward from t
+
+Intuitively, parameter updates nudge the policy towards token sequences that result in accurate Python code for parsing responses.
+
+**Benefits**
+
+By formulizing as a reinforcement learning problem, the parser can handle variability in JSON responses and improve over time through accrued experiences.
+
+The learned policy enables optimally extracting information from tricky API responses.
+
+## System Architecture
+
+APIAide features specialized modules and hierarchical planning with feedback:
+
+
+### Modular Components
+
+```mermaid
+graph TD
+    U[(Instructions)]--> P{Planner}
+    P --> S{API Selector}
+    S --> C{Caller}
+    C --> R{REST API}
+    R --> Pr{Response Parser}
+    Pr --> P
+```
+
+Tasks are divided into planning, API selection, calling and parsing for separation of concerns.
+
+
+### Multi-Level Planning Dynamically Adapts
+
+Instead of creating all required API sequences upfront, APIAide employs a hierarchical planning approach with multiple levels of abstraction.
+
+The key idea is to first create a high-level sub-task, and then map it to a detailed API call sequence. This provides flexibility to dynamically adjust the planning based on execution outcomes.
+
+Workflow Steps
+
+The iterative workflow is:
+
+Decompose Query: Break down instruction into a high-level natural language sub-task
+Match APIs: Select API sequence to accomplish the sub-task
+Invoke APIs: Call APIs by preparing arguments, authorization etc.
+Parse Response: Extract information from API output
+Revise Sub-Task: Use extracted info to create next sub-task
+Benefits
+
+Handles unforeseen scenarios during execution
+Avoids recreating entire plan from scratch
+Adjusts to feedback through hierarchical structure
+For example, if authentication fails, the framework can just replan the steps rather than planning from scratch.
+
+This hierarchical planning centered around high-level sub-tasks followed by detailed API sequences enables APIAide to robustly handle complexity of production APIs.
+
+```mermaid 
+sequenceDiagram
+    User->>Instruction Decomposer: User Instruction
+    Instruction Decomposer->>API Matcher: High-Level <br> Sub-Task
+    API Matcher->>API Invoker: Specific <br> API Sequence
+    API Invoker->>REST API: Invoke API 
+    REST API-->>Response Parser: API <br> Response
+    Response Parser-->>Instruction Decomposer: Extracted <br> Information
+    Instruction Decomposer->>Instruction Decomposer: Generate Next <br> Sub-Task
+```
+
+The **Instruction Decomposer** module first breaks down the complex user instruction into a high-level natural language sub-task.
+
+The **API Matcher** then understands the sub-task intent and selects the appropriate sequence of REST API calls to accomplish it.
+
+Then the **API Invoker** handles authentication, parameterization and actually invokes the APIs, getting the raw response.
+
+The **Response Parser** processes this response based on API schemas to extract relevant information.
+
+Finally, the **Instruction Decomposer** uses this extracted info to create the next sub-task, and the loop continues.
+
+This two-level hierarchy of creating high-level sub-tasks first and then matching them to detailed API call sequences provides flexibility. Based on execution outcomes, the sub-tasks can be revised dynamically.
+
+For example, if authentication fails while invoking an API, the framework can replan the steps without needing to recreate everything from scratch.
+
+This adaptive nature enables APIAide to handle unforeseen scenarios when working with production REST APIs.
+
+
+## Scalable and Flexible Implementation
+
+APIAide is designed to be technology-agnostic and can be implemented in various stacks. A robust reference architecture is shown below:
+
+```mermaid
+graph LR
+    subgraph Backend
+        J((Java))
+        Jobs>Job Queue]
+        Cache>Caching Layer]
+    end
+    
+    subgraph Language Models
+        L4J([Lang4J])
+        L4J --- Inference>Inference Cluster]
+    end
+
+    J --- Plan[Planning <br> Module]
+    J --- Select[API Selection <br> Module]
+
+    Plan --->  L4J
+    Select ---> L4J
+
+    L4J ---> Call[API Invocation <br> Module]
+    L4J ---> Parse[Response <br> Parsing Module]
+
+    Parse ---> Cache
+    Call ---> Cache
+    Plan ---> Cache
+    Select ---> Cache
+```
+
+**Java and Supporting Platforms** provide the scale, concurrency and tooling required for robustness. The key components it handles are:
+
+- Asynchronous **Job Queue** for high throughput
+- Distributed **Caching** for low latency
+- Logging, Monitoring and Alerting capabilities
+
+**Lang4J** serves as the interface to LLMs providing the intelligence required for planning, API selection etc.
+
+For scale, multiple **Inference Instances** can be launched to handle heavy loads.
+
+The workflow is:
+
+1. Inputs first checked in cache
+2. Cache misses queued as async jobs
+3. Jobs processed by Lang4J + LLMs
+4. Outputs cached
+
+**Benefits**
+
+- Leverages maturity of Java ecosystem
+- Horizontally scalable for load handling
+- Simplifies infra and deployment
+
+This blueprint combines stability and intelligence to offer a robust API interaction platform.
+
+
+## Rigorous Testing with Real-World Datasets
+
+APIAide is evaluated on two production API datasets - TMDB and Spotify, covering movie and music domains.
+
+**Datasets**
+
+- 100+ human annotated instructions for each API
+- Instructions verify capability to handle multi-step workflows
+- Sequence of ground truth API calls provided for each instruction
+
+**TMDB API**
+
+- 54 endpoints like search, discover, trending etc
+- OpenAPI Specification based
+- Models core API data model
+
+**Spotify API**
+
+- 40 endpoints for search, recommendations, library, playback control
+- Also has OpenAPI Specification
+- Covers main music streaming capabilities
+
+**Evaluation Metrics**
+
+- **Correct API Call Chains**: % of predicted chains matching ground truth
+- **End-to-End Success Rate**: % test cases with correct final output
+
+Additional metrics like inference latency, explainability are also measured.
+
+## Results Summary
+
+| Metric | Outcome | 
+|-|-|
+| Correct API Call Chains | 79% |
+| End-to-End Success Rate | 75% |
+
+The strong results highlight APIAide's ability to handle complexity of instructions and API workflows in real-world settings.
+
+### Sample Success Case
+
+**Instruction**: *Create playlist "Love Coldplay" with most popular songs by artist*
+
+**Predicted APIs**:
+
+1. Search artist
+2. Get top tracks
+3. Create playlist
+4. Add tracks to playlist
+
+**Ground Truth**: Same API sequence
+
+## Future Work
+
+While results are encouraging, challenges remain:
+
+- Performance drop on longer sequence lengths
+- Brittleness to unseen APIs
+- Blackbox failure modes of LLMs
+
+Continued research across model design, testing and transparency is required to make systems like APIAide robust enough for production use.
+
+Here is an added section on potential use cases across industries:
+
+## High-Impact Application Areas
+
+While the initial focus has been on ad-hoc instructions, APIAide has promising potential to drive impact across multiple domains:
+
+**Retail & Ecommerce**
+
+- Catalog management workflows
+- Personalization driven by CRM data
+- Order fulfillment orchestration
+
+**Healthcare**
+
+- Patient record management
+- Insurance claim processing
+- Drug discovery pipelines
+
+**Finance**
+
+- Investment research automation
+- Risk analysis decisioning
+- Regulatory compliance
+
+**Transportation & Logistics**
+
+- Fleet route optimization
+- Warehouse task coordination
+- Delivery workflow orchestration
+
+The capabilities to understand APIs, decompose tasks, invoke services and consolidate responses can unlock new efficiencies.
+
+
+## High-Impact Application Areas
+
+While the initial focus has been on ad-hoc instructions, APIAide has promising potential to drive impact across multiple domains:
+
+**Retail & Ecommerce**
+
+- Catalog management workflows
+- Personalization driven by CRM data
+- Order fulfillment orchestration
+
+**Healthcare**
+
+- Patient record management
+- Insurance claim processing
+- Drug discovery pipelines
+
+**Finance**
+
+- Investment research automation
+- Risk analysis decisioning
+- Regulatory compliance
+
+**Transportation & Logistics**
+
+- Fleet route optimization
+- Warehouse task coordination
+- Delivery workflow orchestration
+
+**Personalization and Recommendations**
+
+- Build dynamic customer segments based on CRM data
+- Make real-time product suggestions across channels
+- Orchestrate data from catalog, inventory, browsing history etc.
+
+**Customer Journey Optimization**
+
+- Choose optimal channels and content for each segment
+- Coordinate messaging across email, web, app push
+- React to emerging trends and sales events
+
+**Advertising and Promotion**
+
+- Create and rapidly iterate ad campaigns
+- Integrate performance data from multiple analytics sources
+- Adjust bids and budgets to optimize ROI
+
+**Sentiment and Market Analysis**
+
+- Scrape public social data to detect trends
+- Combine reviews, ratings, mentions into single dashboard
+- Feed insights into product, pricing decisions
+
+
+The capabilities to understand APIs, decompose tasks, invoke services and consolidate responses can unlock new efficiencies.
+
+As APIAide matures, it can transition from serving individuals to powering large-scale automated orchestration between organizational systems.
+
+### Vast Potential with Democratization
+
+Furthermore, by hiding complexity behind a conversational interface, APIAide promises to democratize API usage for less technical users.
+
+Subject matter experts in areas like medicine, logistics etc. can focus on core problems while APIAide handles the drudgery of integration.
+
+This shift towards empowering more domain experts also expands the possibility frontier for AI systems to positively impact domains.
+
+Thus the addressable use cases for large language model based orchestrators scale manifold as the interfaces become accessible to non-programmers. The future is promising!
