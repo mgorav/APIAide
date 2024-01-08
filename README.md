@@ -68,8 +68,6 @@ This allows handling variability in outputs and continuously improving with expe
 
 The fusion of mathematical and learning based AI here keeps APIAide both robust and flexible in leveraging APIs - crucial for production systems.
 
->>>>>>> cafe890 (Initial commit)
-
 ### Markov Decision Processes for Effective Decomposition
 
 Markov Decision Process (MDP) provides a mathematical framework for modeling decision making in situations where outcomes are partly random and partly under the control of a decision maker. It enables optimizing policies to maximize reward.
