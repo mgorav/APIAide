@@ -22,6 +22,7 @@ This handles real-world API complexity. Next, we cover the techniques powering A
 
 ## Mathematical Foundations
 
+<<<<<<< HEAD
 APIAide harnesses mathematical models to power its ability to interact with complex real-world APIs reliably. Specifically, Markov Decision Processes enable optimized planning, vector embeddings facilitate accurate API matching, and policy learning parsers handle tricky JSON responses.
 
 These techniques allow APIAide to break down instructions, determine optimal sequences of API calls, configure parameters correctly, and extract information from outputs. The formal abstractions provide provable capabilities to extrapolate intelligently to new situations based on prior experiences.
@@ -29,6 +30,33 @@ These techniques allow APIAide to break down instructions, determine optimal seq
 The mathematical foundations supply APIAide the rigor required to operate at industrial grade. The composable structure also allows improving the specialized modules independently.
 
 Enabled by mathematics, APIAide can take on intricate multi-step interactions with production APIs that otherwise remain out of reach. Let us explore its technical core.
+=======
+While large language model capabilities drive much of APIAide’s value, we complement them with mathematical models to induce rigor and provide guarantees around critical properties.
+
+These formal methods span planning, matching, and parsing - essentially overlaying scientific principles on natural language based techniques.
+
+**Bridging Precision with Flexibility**
+
+We formulate task decomposition as Markov Decision Processes to balance long term reward optimization with local adaptivity.
+
+Sub-task abstraction enables adjusting to situations dynamically while maximizing goals.
+
+**Understanding by Vector Similarities**
+
+Dense semantic embeddings extracted from language models facilitate seamless mapping of intent between free-form instructions and structured APIs.
+
+Cosine similarities between them retrieve optimal matches robustly.
+
+**Learning polices to Parse Responses**
+
+Parsing tricky JSON outputs is cast as reinforcement learning based code generation to maximize execution accuracy.
+
+This allows handling variability in outputs and continuously improving with experience.
+
+
+The fusion of mathematical and learning based AI here keeps APIAide both robust and flexible in leveraging APIs - crucial for production systems.
+
+>>>>>>> cafe890 (Initial commit)
 
 ### Markov Decision Processes for Effective Decomposition
 
