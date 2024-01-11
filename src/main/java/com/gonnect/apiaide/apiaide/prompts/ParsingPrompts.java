@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide.prompots;
+package com.gonnect.apiaide.apiaide.prompts;
 
 public class ParsingPrompts {
 

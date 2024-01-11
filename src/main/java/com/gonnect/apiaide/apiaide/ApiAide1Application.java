@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide1;
+package com.gonnect.apiaide.apiaide;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

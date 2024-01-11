@@ -1,47 +1,121 @@
-package com.gonnect.apiaide.apiaide;
+package com.gonnect.apiaide.apiaide.config;
 
-import com.gonnect.apiaide.apiaide.planner.PlannerPrompts;
+import com.gonnect.apiaide.apiaide.prompts.APISelectorPrompts;
+import com.gonnect.apiaide.apiaide.prompts.PlannerPrompts;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
-import dev.langchain4j.data.document.parser.TextDocumentParser;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
+import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.input.PromptTemplate;
 import dev.langchain4j.model.openai.OpenAiTokenizer;
 import dev.langchain4j.retriever.EmbeddingStoreRetriever;
 import dev.langchain4j.retriever.Retriever;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import java.util.List;
+
+import static com.gonnect.apiaide.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
+import static com.gonnect.apiaide.apiaide.prompts.ParsingPrompts.*;
+import static com.gonnect.apiaide.apiaide.prompts.PlannerPrompts.PLANNER_PROMPT;
+import static dev.langchain4j.model.input.PromptTemplate.from;
 import static dev.langchain4j.model.openai.OpenAiModelName.GPT_3_5_TURBO;
-
-import java.io.IOException;
-
-import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocument;
 
 @Configuration
 public class Configurer {
 
-    ConversationalRetrievalChain conversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                              Retriever<TextSegment> retriever) {
+    /**
+     * JSR-223 Scripting Engine
+     *
+     * @return ScriptEngine
+     */
+    @Bean
+    public ScriptEngine pythonEngine() {
+        return new ScriptEngineManager().getEngineByName("python");
+    }
+
+    @Bean("apiSelectorChain")
+    ConversationalRetrievalChain apSelectionConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                         Retriever<TextSegment> retriever) {
 
         return ConversationalRetrievalChain.builder()
                 .chatLanguageModel(chatModel)
                 .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(20))
-                .promptTemplate(PromptTemplate.from(PlannerPrompts.PLANNER_PROMPT))
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(API_SELECTOR_PROMPT))
                 .build();
     }
+
+    @Bean("plannerConversationalChain")
+    ConversationalRetrievalChain plannarConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                     Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(PLANNER_PROMPT))
+                .build();
+    }
+
+
+    @Bean("codeParsingSchemaConversationalChain")
+    ConversationalRetrievalChain codeParsingSchemaConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                               Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(CODE_PARSING_SCHEMA_TEMPLATE))
+                .build();
+    }
+
+    @Bean("codeParsingResponseConversationalChain")
+    ConversationalRetrievalChain codeParsingResponseConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                                 Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(CODE_PARSING_RESPONSE_TEMPLATE))
+                .build();
+    }
+
+    @Bean("lmParsingConversationalChain")
+    ConversationalRetrievalChain lmParsingConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                       Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(LLM_PARSING_TEMPLATE))
+                .build();
+    }
+
+    @Bean("postprocessConversationalChain")
+    ConversationalRetrievalChain postprocessConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                         Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(POSTPROCESS_TEMPLATE))
+                .build();
+    }
+
 
     @Bean
     EmbeddingModel embeddingModel() {
@@ -60,42 +134,58 @@ public class Configurer {
         return EmbeddingStoreRetriever.from(embeddingStore, embeddingModel, maxResultsRetrieved, minScore);
     }
 
+    /**
+     * Initializes and populates the embedding store with ICL examples.
+     *
+     * @param model the embedding model to use
+     * @return the populated embedding store
+     */
     @Bean
-    EmbeddingStore<TextSegment> embeddingStore(EmbeddingModel embeddingModel, ResourceLoader resourceLoader) throws IOException {
+    public EmbeddingStore<TextSegment> embeddingStore(EmbeddingModel model) {
 
-        // Embedding Store Setup
-        // --------------------
-        // For demonstration purposes, the embedding store is populated
-        // dynamically instead of being pre-filled with application data.
-        // This allows the code to run self-sufficiently for demos.
+        // Create empty store
+        EmbeddingStore<TextSegment> store = new InMemoryEmbeddingStore<>();
 
-        // The first step is initializing an embedding store.
-        // For this example we use an in-memory implementation.
-        // This stores the vector representations of text for similarity lookups.
-        EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
+        // Ingest ICL examples
+        ingestExamples(model, store);
 
-        // Load "Gonnect Support Bot" training guidelines as sample
-        Resource resource = resourceLoader.getResource("classpath:gonnect-miles-terms-and-condition.txt");
-        Document document = loadDocument(resource.getFile().toPath(), new TextDocumentParser());
+        return store;
+    }
 
-        // Ingest Sample Document
-        // ---------------------
+    /**
+     * Ingests the ICL examples into the provided store.
+     * <p>
+     * The process followed is:
+     * <p>
+     * 1. Extract text of all ICL examples
+     * 2. Convert into a Document for processing
+     * 3. Split document into text segments
+     * 4. Generate embeddings for each segment
+     * 5. Add embeddings mapped to original segments in the store
+     * <p>
+     * This allows the ICL examples to be used for semantic search during query planning.
+     *
+     * @param model the embedding model
+     * @param store the embedding store to populate
+     */
+    private void ingestExamples(EmbeddingModel model, EmbeddingStore<TextSegment> store) {
 
-        // 1. Split document into 100-token segments
-        // 2. Convert text segments into vector embeddings
-        // 3. Save embeddings in the store
+        // 1. Construct single document with all ICL text
+        String text = String.join("\n", PlannerPrompts.ICL_EXAMPLES.values());
+        Document document = new Document(text);
 
-        // The EmbeddingStoreIngestor automates this process of
-        // analyzing text and populating the embedding store
-        DocumentSplitter documentSplitter = DocumentSplitters.recursive(100, 0, new OpenAiTokenizer(GPT_3_5_TURBO));
-        EmbeddingStoreIngestor ingestor = EmbeddingStoreIngestor.builder()
-                .documentSplitter(documentSplitter)
-                .embeddingModel(embeddingModel)
-                .embeddingStore(embeddingStore)
-                .build();
-        ingestor.ingest(document);
+        // 2. Split document
+        DocumentSplitter splitter = DocumentSplitters.recursive(100, 0, new OpenAiTokenizer(GPT_3_5_TURBO));
+        List<TextSegment> segments = splitter.split(document);
 
-        return embeddingStore;
+        // 3. Generate embeddings for segments
+        List<Embedding> embeddings = model.embedAll(segments).content();
+
+        model.embedAll(segments);
+
+        // 4. Add to store
+        store.addAll(embeddings, segments);
+
     }
 
 }

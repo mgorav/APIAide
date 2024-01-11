@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class RequestInput {
+public class ParserRequestInput {
 
     private String query;
     private String json;

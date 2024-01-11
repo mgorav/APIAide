@@ -1,7 +1,7 @@
 package com.gonnect.apiaide.apiaide.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gonnect.apiaide.apiaide.prompots.ParsingPrompts;
+import com.gonnect.apiaide.apiaide.prompts.ParsingPrompts;
 import com.gonnect.apiaide.apiaide.python.PythonExecutionService;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
@@ -23,9 +23,9 @@ import static java.util.Map.of;
  * Tries different parsing strategies using an LLM.
  */
 @Component
-public class ResponseParser {
+public class ResponseParser_bak {
 
-    private final Logger logger = LoggerFactory.getLogger(ResponseParser.class);
+    private final Logger logger = LoggerFactory.getLogger(ResponseParser_bak.class);
 
     private final PythonExecutionService pythonService;
 
@@ -59,7 +59,7 @@ public class ResponseParser {
     /**
      *
      */
-    public ResponseParser(
+    public ResponseParser_bak(
             @Qualifier("codeParsingSchemaConversationalChain")
             ConversationalRetrievalChain codeParsingSchemaConversationalChain,
             @Qualifier("codeParsingResponseConversationalChain")
@@ -91,7 +91,7 @@ public class ResponseParser {
      * based on provided query.
      * Tries different strategies.
      */
-    public String parse(RequestInput input) {
+    public String parse(ParserRequestInput input) {
 
         String output = tryCodeTemplate(input, codeParsingSchemaTemplate);
 
@@ -124,7 +124,7 @@ public class ResponseParser {
         logger.info("Tried code: " + code + ", output: " + output);
     }
 
-    private String generateCode(RequestInput input, PromptTemplate template) {
+    private String generateCode(ParserRequestInput input, PromptTemplate template) {
 
         Prompt prompt = template.apply(of(
                 "query", input.getQuery(),
@@ -143,7 +143,7 @@ public class ResponseParser {
                 .toString();
     }
 
-    private String tryCodeTemplate(RequestInput input, PromptTemplate template) {
+    private String tryCodeTemplate(ParserRequestInput input, PromptTemplate template) {
 
         String code = generateCode(input, template);
 
@@ -159,7 +159,7 @@ public class ResponseParser {
 
     }
 
-    private String tryLLMParsing(RequestInput input) {
+    private String tryLLMParsing(ParserRequestInput input) {
 
         return llm.get(llmParsingTemplate).execute(llmParsingTemplate.apply(input).text());
 
@@ -168,6 +168,5 @@ public class ResponseParser {
     private String postProcess(String output) {
         return llm.get(postprocessTemplate).execute(postprocessTemplate.apply(output).text());
     }
-
 
 }
