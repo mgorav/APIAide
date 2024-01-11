@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide.prompts;
+package com.gonnect.apiaide.prompts;
 
 import java.util.HashMap;
 import java.util.Map;

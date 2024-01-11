@@ -1,7 +1,7 @@
-package com.gonnect.apiaide.apiaide.config;
+package com.gonnect.apiaide.config;
 
-import com.gonnect.apiaide.apiaide.prompts.APISelectorPrompts;
-import com.gonnect.apiaide.apiaide.prompts.PlannerPrompts;
+import com.gonnect.apiaide.prompts.CallerPrompts;
+import com.gonnect.apiaide.prompts.PlannerPrompts;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
@@ -24,9 +24,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.util.List;
 
-import static com.gonnect.apiaide.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
-import static com.gonnect.apiaide.apiaide.prompts.ParsingPrompts.*;
-import static com.gonnect.apiaide.apiaide.prompts.PlannerPrompts.PLANNER_PROMPT;
+import static com.gonnect.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
+import static com.gonnect.apiaide.prompts.CallerPrompts.CALLER_PROMPT;
+import static com.gonnect.apiaide.prompts.ParsingPrompts.*;
+import static com.gonnect.apiaide.prompts.PlannerPrompts.PLANNER_PROMPT;
 import static dev.langchain4j.model.input.PromptTemplate.from;
 import static dev.langchain4j.model.openai.OpenAiModelName.GPT_3_5_TURBO;
 
@@ -55,6 +56,19 @@ public class Configurer {
                 .build();
     }
 
+    @Bean("callerConversationalChain")
+    ConversationalRetrievalChain callerConversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                                    Retriever<TextSegment> retriever) {
+
+        return ConversationalRetrievalChain.builder()
+                .chatLanguageModel(chatModel)
+                .retriever(retriever)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
+                .promptTemplate(from(CALLER_PROMPT))
+                .build();
+    }
+
+
     @Bean("plannerConversationalChain")
     ConversationalRetrievalChain plannarConversationalRetrievalChain(ChatLanguageModel chatModel,
                                                                      Retriever<TextSegment> retriever) {
@@ -66,7 +80,6 @@ public class Configurer {
                 .promptTemplate(from(PLANNER_PROMPT))
                 .build();
     }
-
 
     @Bean("codeParsingSchemaConversationalChain")
     ConversationalRetrievalChain codeParsingSchemaConversationalRetrievalChain(ChatLanguageModel chatModel,

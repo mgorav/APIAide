@@ -1,8 +1,8 @@
-package com.gonnect.apiaide.apiaide.parser;
+package com.gonnect.apiaide.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gonnect.apiaide.apiaide.prompts.ParsingPrompts;
-import com.gonnect.apiaide.apiaide.python.PythonExecutionService;
+import com.gonnect.apiaide.prompts.ParsingPrompts;
+import com.gonnect.apiaide.python.PythonExecutionService;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;

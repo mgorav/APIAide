@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide.python;
+package com.gonnect.apiaide.python;
 
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;

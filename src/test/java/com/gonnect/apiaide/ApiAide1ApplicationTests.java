@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide;
+package com.gonnect.apiaide;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

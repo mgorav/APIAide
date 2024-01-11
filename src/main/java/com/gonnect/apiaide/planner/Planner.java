@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide.planner;
+package com.gonnect.apiaide.planner;
 
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.embedding.Embedding;

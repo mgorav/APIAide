@@ -1,6 +1,11 @@
-package com.gonnect.apiaide.apiaide.prompts;
+package com.gonnect.apiaide.prompts;
+
+import dev.langchain4j.model.input.PromptTemplate;
+
+import static dev.langchain4j.model.input.PromptTemplate.from;
 
 public class ParsingPrompts {
+
 
     public static final String CODE_PARSING_SCHEMA_TEMPLATE = """
             Here is an API response schema from an OAS and a query.  
@@ -138,5 +143,10 @@ public class ParsingPrompts {
             Input: {truncated_str}
             Output:  
             """;
+
+    public static final PromptTemplate codeParsingSchemaTemplate = from(CODE_PARSING_SCHEMA_TEMPLATE);
+    public static final PromptTemplate codeParsingResponseTemplate = from(CODE_PARSING_RESPONSE_TEMPLATE);
+    public static final PromptTemplate llmParsingTemplate = from(LLM_PARSING_TEMPLATE);
+    public static final PromptTemplate postprocessTemplate = from(POSTPROCESS_TEMPLATE);
 
 }

@@ -1,7 +1,8 @@
-package com.gonnect.apiaide.apiaide.parser;
+package com.gonnect.apiaide.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gonnect.apiaide.apiaide.python.PythonExecutionService;
+import com.gonnect.apiaide.prompts.ParsingPrompts;
+import com.gonnect.apiaide.python.PythonExecutionService;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
@@ -14,8 +15,8 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.gonnect.apiaide.apiaide.parser.ParsingConstants.*;
-import static com.gonnect.apiaide.apiaide.prompts.ParsingPrompts.*;
+import static com.gonnect.apiaide.parser.ParsingConstants.MAX_OUTPUT_LENGTH;
+import static com.gonnect.apiaide.prompts.ParsingPrompts.*;
 import static dev.langchain4j.model.input.PromptTemplate.from;
 import static java.util.Map.of;
 import static java.util.Optional.ofNullable;
@@ -50,44 +51,43 @@ public class ResponseParser {
 
     private final Logger logger = LoggerFactory.getLogger(ResponseParser.class);
     private final PythonExecutionService pythonService;
+    private final Map<PromptTemplate, ConversationalRetrievalChain> llm;
 
     /**
      * Constructs a ResponseParser with the specified PythonExecutionService.
      *
-     * @param pythonService The PythonExecutionService to use for executing Python code.
+     * @param pythonService                          The PythonExecutionService to use for executing Python code.
+     * @param codeParsingSchemaConversationalChain   Chain for parsing API response based on JSON schema and query.
+     * @param codeParsingResponseConversationalChain Chain for parsing API response based on JSON response snippet.
+     * @param lmParsingConversationalChain           Chain for directly parsing and summarizing response using LLM.
+     * @param postprocessConversationalChain         Chain for post-processing truncated output if needed
      */
-    public ResponseParser(PythonExecutionService pythonService) {
+    public ResponseParser(PythonExecutionService pythonService,
+                          ConversationalRetrievalChain codeParsingSchemaConversationalChain,
+                          ConversationalRetrievalChain codeParsingResponseConversationalChain,
+                          ConversationalRetrievalChain lmParsingConversationalChain,
+                          ConversationalRetrievalChain postprocessConversationalChain) {
         this.pythonService = pythonService;
+
+
+        // Mapping of prompt templates to conversational chains
+        this.llm = of(
+                ParsingPrompts.codeParsingSchemaTemplate, codeParsingSchemaConversationalChain,
+                ParsingPrompts.codeParsingResponseTemplate, codeParsingResponseConversationalChain,
+                ParsingPrompts.llmParsingTemplate, lmParsingConversationalChain,
+                ParsingPrompts.postprocessTemplate, postprocessConversationalChain
+        );
     }
 
     /**
      * Orchestrates parsing an API response based on the provided query.
      * Tries different strategies.
      *
-     * @param input                                  The RequestInput containing query and API information.
-     * @param codeParsingSchemaConversationalChain   Chain for parsing API response based on JSON schema and query.
-     * @param codeParsingResponseConversationalChain Chain for parsing API response based on JSON response snippet.
-     * @param lmParsingConversationalChain           Chain for directly parsing and summarizing response using LLM.
-     * @param postprocessConversationalChain         Chain for post-processing truncated output if needed.
+     * @param input The RequestInput containing query and API information..
      * @return A Map containing the parsed output with the key as OUTPUT_KEY.
      */
-    public Map<String, String> parse(ParserRequestInput input, ConversationalRetrievalChain codeParsingSchemaConversationalChain,
-                                     ConversationalRetrievalChain codeParsingResponseConversationalChain,
-                                     ConversationalRetrievalChain lmParsingConversationalChain,
-                                     ConversationalRetrievalChain postprocessConversationalChain) {
+    public Map<String, String> parse(ParserRequestInput input) {
 
-        // Prompt templates for generating Python code and parsing responses
-        PromptTemplate codeParsingSchemaTemplate = from(CODE_PARSING_SCHEMA_TEMPLATE);
-        PromptTemplate codeParsingResponseTemplate = from(CODE_PARSING_RESPONSE_TEMPLATE);
-        PromptTemplate llmParsingTemplate = from(LLM_PARSING_TEMPLATE);
-        PromptTemplate postprocessTemplate = from(POSTPROCESS_TEMPLATE);
-
-        // Mapping of prompt templates to conversational chains
-        Map<PromptTemplate, ConversationalRetrievalChain> llm = of(
-                codeParsingSchemaTemplate, codeParsingSchemaConversationalChain,
-                codeParsingResponseTemplate, codeParsingResponseConversationalChain,
-                llmParsingTemplate, lmParsingConversationalChain,
-                postprocessTemplate, postprocessConversationalChain);
 
         // Try different parsing strategies
         String output = tryCodeTemplate(input, codeParsingSchemaTemplate, llm)
@@ -96,10 +96,10 @@ public class ResponseParser {
 
         // Post-process if output length exceeds maximum allowed
         if (output.length() > MAX_OUTPUT_LENGTH) {
-            postProcess(output, postprocessTemplate, llm);
+            postProcess(output, from(POSTPROCESS_TEMPLATE), llm);
         }
 
-        return of(OUTPUT_KEY, output);
+        return of(ParsingConstants.OUTPUT_KEY, output);
     }
 
     /**
@@ -109,10 +109,10 @@ public class ResponseParser {
      * @return The simplified JSON.
      */
     private String simplifyJson(String json) {
-        if (json.length() > MAX_JSON_LENGTH_2) {
-            return json.substring(0, MAX_JSON_LENGTH_2);
-        } else if (json.length() > MAX_JSON_LENGTH_1) {
-            return json.substring(0, MAX_JSON_LENGTH_1);
+        if (json.length() > ParsingConstants.MAX_JSON_LENGTH_2) {
+            return json.substring(0, ParsingConstants.MAX_JSON_LENGTH_2);
+        } else if (json.length() > ParsingConstants.MAX_JSON_LENGTH_1) {
+            return json.substring(0, ParsingConstants.MAX_JSON_LENGTH_1);
         }
         return json;
     }

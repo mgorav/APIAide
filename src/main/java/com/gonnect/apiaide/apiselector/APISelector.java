@@ -1,5 +1,6 @@
-package com.gonnect.apiaide.apiaide.apiselector;
+package com.gonnect.apiaide.apiselector;
 
+import com.gonnect.apiaide.oas.OpenAPISpec;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
 import lombok.Setter;
@@ -10,7 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.gonnect.apiaide.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
+import static com.gonnect.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
 import static dev.langchain4j.model.input.PromptTemplate.from;
 import static java.util.Map.of;
 

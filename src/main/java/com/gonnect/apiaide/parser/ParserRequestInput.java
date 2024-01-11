@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.apiaide.parser;
+package com.gonnect.apiaide.parser;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
