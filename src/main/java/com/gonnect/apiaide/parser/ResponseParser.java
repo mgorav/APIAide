@@ -27,7 +27,7 @@ import static java.util.Optional.ofNullable;
  * It employs various parsing strategies, including code templates and a Large Language Model (LLM).
  * The class is designed to be flexible, allowing different parsing chains for different strategies.
  * <p>
- * The parsing process is orchestrated by the {@link #parse(ParserRequestInput, ConversationalRetrievalChain, ConversationalRetrievalChain, ConversationalRetrievalChain, ConversationalRetrievalChain)} method,
+ * The parsing process is orchestrated by the {@link #parse(ParserRequestInput)} } method,
  * which sequentially tries different strategies, such as code parsing based on JSON schema, code parsing based on JSON response snippet,
  * and direct parsing using the LLM. Additionally, it handles post-processing of the output if its length exceeds a specified maximum.
  * <p>

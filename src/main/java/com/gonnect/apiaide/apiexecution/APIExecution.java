@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.gonnect.apiaide.parser.ParsingConstants.OUTPUT_KEY;
 import static com.gonnect.apiaide.prompts.CallerPrompts.CALLER_PROMPT;
 import static java.util.stream.Collectors.toMap;
 
@@ -23,7 +22,7 @@ import static java.util.stream.Collectors.toMap;
  * and parsing the responses using a ConversationalRetrievalChain and a ResponseParser.
  */
 @Service
-public class Caller {
+public class APIExecution {
 
     private final ConversationalRetrievalChain callerChain;
     private final OpenAPISpec openAPISpec;
@@ -36,7 +35,7 @@ public class Caller {
      * @param openAPISpec               The OpenAPISpec providing API specifications.
      * @param responseParser            The ResponseParser used for parsing API responses.
      */
-    public Caller(ConversationalRetrievalChain callerConversationalChain, OpenAPISpec openAPISpec, ResponseParser responseParser) {
+    public APIExecution(ConversationalRetrievalChain callerConversationalChain, OpenAPISpec openAPISpec, ResponseParser responseParser) {
         this.callerChain = callerConversationalChain;
         this.openAPISpec = openAPISpec;
         this.responseParser = responseParser;
@@ -49,7 +48,7 @@ public class Caller {
      * @param conversationalChains List of conversational chains for parsing responses.
      * @return The formatted output of the API execution result.
      */
-    public String executeAPIs(APIExecutionRequest input, List<String> conversationalChains) {
+    public Map<String, String> executeAPIs(APIExecutionRequest input, List<String> conversationalChains) {
         // Create a prompt template with API documentation
         PromptTemplate template = PromptTemplate.from(CALLER_PROMPT);
         Prompt prompt = template.apply(Map.of("api_docs", generateAPIDocs()));
@@ -63,14 +62,20 @@ public class Caller {
 
         // Use the ResponseParser to parse the API response
         ParserRequestInput parserRequestInput = createParserRequestInput(input, conversation);
-        Map<String, String> parsedOutput = conversationalChains.stream()
+//        Map<String, String> parsedOutput = conversationalChains.stream()
+//                .collect(toMap(
+//                        chain -> chain,
+//                        chain -> responseParser.parse(parserRequestInput).toString()
+//                ));
+        return conversationalChains.stream()
                 .collect(toMap(
                         chain -> chain,
                         chain -> responseParser.parse(parserRequestInput).toString()
                 ));
 
+
         // Return the formatted output
-        return formatOutput(parsedOutput.get(OUTPUT_KEY));
+        //return formatOutput(parsedOutput.get(OUTPUT_KEY));
     }
 
     /**
