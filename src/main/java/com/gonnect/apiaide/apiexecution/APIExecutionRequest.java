@@ -12,9 +12,9 @@ public class APIExecutionRequest {
     private String scenario; // TMDB, Spotify etc
     private Map<String, String> parameters; // Additional parameters
 
-    // Constructors, getters, and setters as needed
-
-    // Additional methods or functionalities can be added here
+    public APIExecutionRequest() {
+        this.parameters = Map.of();
+    }
 
     public String getQuery() {
         // Return the value for the "query" field
@@ -41,5 +41,4 @@ public class APIExecutionRequest {
         return parameters.get("responseDescription");
     }
 
-    // You can add more methods based on your specific requirements
 }

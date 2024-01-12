@@ -1,6 +1,6 @@
 package com.gonnect.apiaide.apiexecution;
 
-import com.gonnect.apiaide.oas.OpenAPISpec;
+import com.gonnect.apiaide.oas.OpenAPISpecUtil;
 import com.gonnect.apiaide.parser.ParserRequestInput;
 import com.gonnect.apiaide.parser.ResponseParser;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
@@ -25,7 +25,7 @@ import static java.util.stream.Collectors.toMap;
 public class APIExecution {
 
     private final ConversationalRetrievalChain callerChain;
-    private final OpenAPISpec openAPISpec;
+    private final OpenAPISpecUtil openAPISpec;
     private final ResponseParser responseParser;
 
     /**
@@ -35,7 +35,7 @@ public class APIExecution {
      * @param openAPISpec               The OpenAPISpec providing API specifications.
      * @param responseParser            The ResponseParser used for parsing API responses.
      */
-    public APIExecution(ConversationalRetrievalChain callerConversationalChain, OpenAPISpec openAPISpec, ResponseParser responseParser) {
+    public APIExecution(ConversationalRetrievalChain callerConversationalChain, OpenAPISpecUtil openAPISpec, ResponseParser responseParser) {
         this.callerChain = callerConversationalChain;
         this.openAPISpec = openAPISpec;
         this.responseParser = responseParser;
@@ -62,11 +62,6 @@ public class APIExecution {
 
         // Use the ResponseParser to parse the API response
         ParserRequestInput parserRequestInput = createParserRequestInput(input, conversation);
-//        Map<String, String> parsedOutput = conversationalChains.stream()
-//                .collect(toMap(
-//                        chain -> chain,
-//                        chain -> responseParser.parse(parserRequestInput).toString()
-//                ));
         return conversationalChains.stream()
                 .collect(toMap(
                         chain -> chain,

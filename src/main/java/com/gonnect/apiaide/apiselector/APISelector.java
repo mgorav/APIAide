@@ -1,6 +1,6 @@
 package com.gonnect.apiaide.apiselector;
 
-import com.gonnect.apiaide.oas.OpenAPISpec;
+import com.gonnect.apiaide.oas.OpenAPISpecUtil;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
 import lombok.Setter;
@@ -51,11 +51,11 @@ import static java.util.Map.of;
 public class APISelector {
 
     private final ConversationalRetrievalChain apiSelectorChain;
-    private final OpenAPISpec openAPISpec;
+    private final OpenAPISpecUtil openAPISpec;
     @Setter
     private Map<String, String> iclExamples;
 
-    public APISelector(ConversationalRetrievalChain apiSelectorChain, OpenAPISpec openAPISpec) {
+    public APISelector(ConversationalRetrievalChain apiSelectorChain, OpenAPISpecUtil openAPISpec) {
         this.apiSelectorChain = apiSelectorChain;
         this.openAPISpec = openAPISpec;
     }

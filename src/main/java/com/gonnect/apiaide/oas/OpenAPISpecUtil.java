@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-public class OpenAPISpec {
+public class OpenAPISpecUtil {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Map<String, String>> endpoints = new ConcurrentHashMap<>();
@@ -76,7 +76,7 @@ public class OpenAPISpec {
                 .toArray(String[]::new);
     }
 
-    public List<String> getMatchedEndpoints(OpenAPISpec spec, String plan) {
+    public List<String> getMatchedEndpoints(OpenAPISpecUtil spec, String plan) {
         Pattern pattern = Pattern.compile("\\b(GET|POST|PATCH|DELETE|PUT)\\s+(/\\S*)*");
         List<String> planEndpoints = new ArrayList<>();
         Matcher matcher = pattern.matcher(plan);

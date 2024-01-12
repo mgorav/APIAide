@@ -2,6 +2,7 @@ package com.gonnect.apiaide.orchestrator;
 
 import lombok.Data;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
@@ -13,4 +14,7 @@ public class QueryInput {
 
     private Map<String, String> parameters; // Additional parameters
 
+    public QueryInput() {
+        this.parameters = new HashMap<>();
+    }
 }
