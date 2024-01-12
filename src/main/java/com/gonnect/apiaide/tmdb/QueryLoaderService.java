@@ -1,5 +1,6 @@
 package com.gonnect.apiaide.tmdb;
 
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -11,23 +12,24 @@ import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
 @Service
+@Setter
 public class QueryLoaderService {
 
-    @Value("classpath:datasets/tmdb.json")
     private final ResourceLoader resourceLoader;
+
+    @Value("classpath:datasets/tmdb.json")
+    private Resource resource;
 
     public QueryLoaderService(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
-    public String loadTmdbQueries() {
-        try {
-            Resource resource = resourceLoader.getResource("classpath:datasets/tmdb.json");
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            }
+    public String loadTMDBQueries() {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
         } catch (IOException e) {
             throw new RuntimeException("Error loading TMDB queries from file", e);
         }
     }
+
 }
