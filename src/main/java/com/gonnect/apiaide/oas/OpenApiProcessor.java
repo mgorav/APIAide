@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
  * This helps focus retrieval on essential parts of the spec.
  */
 public class OpenApiProcessor {
-
     /**
      * Parses a YAML OpenAPI spec and reduces it to simplified form.
      * <p>
