@@ -1,5 +1,6 @@
 package com.gonnect.apiaide.apiexecution;
 
+import com.gonnect.apiaide.oas.ReducedOpenAPISpec;
 import lombok.Data;
 
 import java.util.Map;
@@ -11,6 +12,7 @@ public class APIExecutionRequest {
     private String plan;
     private String scenario; // TMDB, Spotify etc
     private Map<String, String> parameters; // Additional parameters
+    private ReducedOpenAPISpec apiSpec;
 
     public APIExecutionRequest() {
         this.parameters = Map.of();

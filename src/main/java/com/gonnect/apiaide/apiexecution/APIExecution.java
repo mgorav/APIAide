@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.gonnect.apiaide.prompts.CallerPrompts.CALLER_PROMPT;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * The Caller class is responsible for executing API calls based on a given plan
@@ -25,19 +24,16 @@ import static java.util.stream.Collectors.toMap;
 public class APIExecution {
 
     private final ConversationalRetrievalChain callerChain;
-    private final OpenAPISpecUtil openAPISpec;
     private final ResponseParser responseParser;
 
     /**
      * Constructor for the Caller class.
      *
      * @param callerConversationalChain The ConversationalRetrievalChain used for API execution.
-     * @param openAPISpec               The OpenAPISpec providing API specifications.
      * @param responseParser            The ResponseParser used for parsing API responses.
      */
-    public APIExecution(ConversationalRetrievalChain callerConversationalChain, OpenAPISpecUtil openAPISpec, ResponseParser responseParser) {
+    public APIExecution(ConversationalRetrievalChain callerConversationalChain, ResponseParser responseParser) {
         this.callerChain = callerConversationalChain;
-        this.openAPISpec = openAPISpec;
         this.responseParser = responseParser;
     }
 
@@ -48,10 +44,10 @@ public class APIExecution {
      * @param conversationalChains List of conversational chains for parsing responses.
      * @return The formatted output of the API execution result.
      */
-    public Map<String, String> executeAPIs(APIExecutionRequest input, List<String> conversationalChains) {
+    public Map<String, String> run(APIExecutionRequest input, List<Map<String, String>> conversationalChains) {
         // Create a prompt template with API documentation
         PromptTemplate template = PromptTemplate.from(CALLER_PROMPT);
-        Prompt prompt = template.apply(Map.of("api_docs", generateAPIDocs()));
+        Prompt prompt = template.apply(Map.of("api_docs", generateAPIDocs(input)));
 
         // Execute the API calls in a conversational chain
         String conversation = callerChain.execute(prompt.text());
@@ -63,8 +59,8 @@ public class APIExecution {
         // Use the ResponseParser to parse the API response
         ParserRequestInput parserRequestInput = createParserRequestInput(input, conversation);
         return conversationalChains.stream()
-                .collect(toMap(
-                        chain -> chain,
+                .collect(Collectors.toMap(
+                        chain -> chain.get("background"), // Assuming 'background' is the relevant key
                         chain -> responseParser.parse(parserRequestInput).toString()
                 ));
 
@@ -78,7 +74,10 @@ public class APIExecution {
      *
      * @return Concatenated API documentation for all endpoints.
      */
-    private String generateAPIDocs() {
+    private String generateAPIDocs(APIExecutionRequest input) {
+        OpenAPISpecUtil openAPISpec = OpenAPISpecUtil.builder()
+                .endpoints(input.getApiSpec().getEndpoints())
+                .build();
         return openAPISpec.getEndpoints().stream()
                 .map(e -> e + " " + openAPISpec.getOperation(e))
                 .collect(Collectors.joining("\n"));

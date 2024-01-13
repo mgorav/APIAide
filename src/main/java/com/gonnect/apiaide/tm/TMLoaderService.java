@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.tmdb;
+package com.gonnect.apiaide.tm;
 
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;

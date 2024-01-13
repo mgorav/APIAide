@@ -1,16 +1,23 @@
 package com.gonnect.apiaide.planner;
 
+import com.gonnect.apiaide.utils.CastUtil;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.gonnect.apiaide.prompts.PlannerPrompts.ICL_EXAMPLES;
+import static com.gonnect.apiaide.prompts.PlannerPrompts.PLANNER_PROMPT;
+import static com.gonnect.apiaide.utils.CastUtil.castToList;
+import static com.gonnect.apiaide.utils.CastUtil.castToMap;
+import static java.lang.String.format;
+import static java.util.regex.Pattern.compile;
 
 /**
  * Planner generates plans to fulfill user queries using a conversational LLM.
@@ -18,6 +25,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class Planner {
+
+    private static AtomicInteger cnt = new AtomicInteger(0);
 
     final private ConversationalRetrievalChain chain;
     private final EmbeddingStore<TextSegment> store;
@@ -35,33 +44,55 @@ public class Planner {
      * Generates the next plan step for the given user input.
      * Maintains context embeddings in the store.
      */
-    public String generatePlan(String input) {
-        List<String> context = getContext();
+    public Map<String, String> run(Map<String, ?> inputs) {
 
-        String prompt = context + "\n" + input;
+        String history = constructScratchpad(castToList(inputs.get("history")));
+        String iclExamples = ICL_EXAMPLES.get("tmdb");
 
-        String response = chain.execute(prompt);
 
-        addToContext(response);
+        String plannerPrompt = format(PLANNER_PROMPT,
+                Map.of(
+                        "input", inputs.get("query"),
+                        "agent_scratchpad", history,
+                        "stop_signals", generateStopSignals(castToMap(inputs))
 
-        return response;
+
+                ));
+
+
+        String plannerChainOutput = chain.execute(plannerPrompt);
+
+        return Map.of(
+                "result", compile("Plan step \\d+: ")
+                        .matcher(plannerChainOutput)
+                        .replaceAll("")
+                        .trim()
+        );
     }
 
 
-    private List<String> getContext() {
-        List<EmbeddingMatch<TextSegment>> matches = store.findRelevant(null, 1000);
+    private String constructScratchpad(List<Map<String, String>> history) {
+        if (history.isEmpty()) {
+            return "";
+        }
 
-        // Extract just the embeddings
-        List<Embedding> embeddings = matches.stream()
-                .map(EmbeddingMatch::embedding)
-                .collect(Collectors.toList());
-
-        return store.addAll(embeddings);
+        StringBuilder scratchpad = new StringBuilder();
+        for (int i = 0; i < history.size(); i++) {
+            Map<String, String> step = history.get(i);
+            scratchpad.append(format("Plan step %d: %s\n", i + 1, step.get("plan")));
+            scratchpad.append(format("API response: %s\n", step.get("execution_res")));
+        }
+        return scratchpad.toString();
     }
 
-    private void addToContext(String text) {
-        Embedding embedding = embeddingModel.embed(text).content();
-        store.add(embedding);
+    private String generateStopSignals(Map<String, List<String>> history) {
+        StringBuilder stopSignals = new StringBuilder();
+        if (history.containsKey("stop_signal")) {
+            stopSignals.append(String.format("Stop signal %d: %s\n", cnt.incrementAndGet() + 1, history.get("stop_signal")));
+        }
+
+        return stopSignals.toString();
     }
+
 
 }

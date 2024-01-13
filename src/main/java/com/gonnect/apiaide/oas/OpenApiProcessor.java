@@ -1,5 +1,8 @@
 package com.gonnect.apiaide.oas;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
  * - 200 response only
  * This helps focus retrieval on essential parts of the spec.
  */
+@Service
 public class OpenApiProcessor {
     /**
      * Parses a YAML OpenAPI spec and reduces it to simplified form.
@@ -55,20 +59,26 @@ public class OpenApiProcessor {
      * @param mergeAllOf   True to merge allOf properties
      * @return Reduced OpenAPI spec
      */
-    public static ReducedOpenAPISpec parseYamlOpenApiSpec(String yamlString, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
+    public ReducedOpenAPISpec reduceOpenApiSpec(String yamlString, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
         Yaml yaml = new Yaml();
         Map<String, Object> spec = yaml.load(yamlString);
         return reduceOpenApiSpec(spec, dereference, onlyRequired, mergeAllOf);
     }
 
-    public static ReducedOpenAPISpec parseYamlOpenApiSpec(InputStream yamlInputStream, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
+    public ReducedOpenAPISpec reduceOpenApiSpec(JsonNode jsonNode, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> spec = objectMapper.convertValue(jsonNode, Map.class);
+        return reduceOpenApiSpec(spec, dereference, onlyRequired, mergeAllOf);
+    }
+
+    public ReducedOpenAPISpec reduceOpenApiSpec(InputStream yamlInputStream, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
         Yaml yaml = new Yaml();
         Map<String, Object> spec = yaml.load(yamlInputStream);
         return reduceOpenApiSpec(spec, dereference, onlyRequired, mergeAllOf);
     }
 
 
-    public static ReducedOpenAPISpec reduceOpenApiSpec(Map<String, Object> spec, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
+    public ReducedOpenAPISpec reduceOpenApiSpec(Map<String, Object> spec, boolean dereference, boolean onlyRequired, boolean mergeAllOf) {
         List<Map<String, Object>> endpoints = ((Map<String, Object>) spec.get("paths")).entrySet().stream()
                 .flatMap(pathEntry -> {
                     String route = pathEntry.getKey();
@@ -118,7 +128,7 @@ public class OpenApiProcessor {
      * @param fullSpec Complete OpenAPI spec
      * @return specObj with all $refs dereferenced by retrieving definition from fullSpec
      */
-    public static Object dereferenceRefs(Map<String, Object> specObj, Map<String, Object> fullSpec) {
+    public Object dereferenceRefs(Map<String, Object> specObj, Map<String, Object> fullSpec) {
         return RefDereferencer.dereferenceRefsHelper(specObj, fullSpec);
     }
 
@@ -133,7 +143,7 @@ public class OpenApiProcessor {
      * @param obj OpenAPI object (possibly with allOf properties)
      * @return Object with all "allOf" properties merged
      */
-    public static Object mergeAllOfProperties(Object obj) {
+    public Object mergeAllOfProperties(Object obj) {
         return AllOfMerger.mergeAllOfPropertiesHelper(obj);
     }
 

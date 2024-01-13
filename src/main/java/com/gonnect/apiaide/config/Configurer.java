@@ -1,6 +1,6 @@
 package com.gonnect.apiaide.config;
 
-import com.gonnect.apiaide.prompts.CallerPrompts;
+
 import com.gonnect.apiaide.prompts.PlannerPrompts;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.document.Document;
@@ -17,12 +17,12 @@ import dev.langchain4j.retriever.EmbeddingStoreRetriever;
 import dev.langchain4j.retriever.Retriever;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
+import org.python.util.PythonInterpreter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import java.util.List;
+import java.util.Properties;
 
 import static com.gonnect.apiaide.prompts.APISelectorPrompts.API_SELECTOR_PROMPT;
 import static com.gonnect.apiaide.prompts.CallerPrompts.CALLER_PROMPT;
@@ -34,14 +34,28 @@ import static dev.langchain4j.model.openai.OpenAiModelName.GPT_3_5_TURBO;
 @Configuration
 public class Configurer {
 
+
+    static {
+        Properties props = new Properties();
+        props.setProperty("python.import.site", "false");
+        PythonInterpreter.initialize(props, null, new String[0]);
+    }
+
     /**
      * JSR-223 Scripting Engine
      *
-     * @return ScriptEngine
+     * @return PythonInterpreter
      */
     @Bean
-    public ScriptEngine pythonEngine() {
-        return new ScriptEngineManager().getEngineByName("python");
+    public PythonInterpreter interpreter() {
+
+        PythonInterpreter interpreter = new PythonInterpreter();
+
+        interpreter.exec("import sys");
+        interpreter.exec("sys.path.append('/usr/local/Cellar/jython/2.7.3/Lib')");
+
+
+        return interpreter;
     }
 
     @Bean("apiSelectorChain")
@@ -146,6 +160,8 @@ public class Configurer {
 
         return EmbeddingStoreRetriever.from(embeddingStore, embeddingModel, maxResultsRetrieved, minScore);
     }
+
+
 
     /**
      * Initializes and populates the embedding store with ICL examples.

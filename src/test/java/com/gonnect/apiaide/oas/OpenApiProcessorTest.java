@@ -53,7 +53,7 @@ class OpenApiProcessorTest {
         );
 
         // Call the reduceOpenApiSpec method
-        ReducedOpenAPISpec actualReducedSpec = OpenApiProcessor.parseYamlOpenApiSpec(yamlSpec, true, true, true);
+        ReducedOpenAPISpec actualReducedSpec = new OpenApiProcessor().reduceOpenApiSpec(yamlSpec, true, true, true);
 
         // Use assertAll to check each field independently
         assertAll("ReducedOpenAPISpec",

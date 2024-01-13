@@ -1,31 +1,39 @@
 package com.gonnect.apiaide.python;
 
-import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.python.core.Py;
+import org.python.core.PyObject;
+import org.python.core.PyString;
+import org.python.util.PythonInterpreter;
 import org.springframework.stereotype.Service;
 
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.SimpleBindings;
 import java.util.Map;
 
 @Service
 public class PythonExecutionService {
 
-    private final ScriptEngine engine;
+    private final PythonInterpreter interpreter;
 
-    public PythonExecutionService(ScriptEngine engine) {
-        this.engine = engine;
+    public PythonExecutionService(PythonInterpreter interpreter) {
+        this.interpreter = interpreter;
     }
 
-    @SneakyThrows
     public Object execute(String script, Map<String, Object> bindings) {
 
+        PyObject scope = interpreter.getLocals();
+
         if (bindings != null) {
-            SimpleBindings b = new SimpleBindings(bindings);
-            engine.setBindings(b, ScriptContext.ENGINE_SCOPE);
+            for (Map.Entry<String, Object> entry : bindings.entrySet()) {
+
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                PyObject pyKey = new PyString(key);
+                PyObject pyValue = Py.java2py(value);
+
+                scope.__set__(pyKey, pyValue);
+            }
         }
 
-        return engine.eval(script);
+        return interpreter.eval(script);
     }
 }

@@ -4,9 +4,12 @@ import com.gonnect.apiaide.apiexecution.APIExecution;
 import com.gonnect.apiaide.apiexecution.APIExecutionRequest;
 import com.gonnect.apiaide.apiselector.APISelector;
 import com.gonnect.apiaide.apiselector.APISelectorRequestInput;
+import com.gonnect.apiaide.oas.ReducedOpenAPISpec;
 import com.gonnect.apiaide.parser.ParserRequestInput;
 import com.gonnect.apiaide.parser.ResponseParser;
 import com.gonnect.apiaide.planner.Planner;
+import com.gonnect.apiaide.prompts.APISelectorPrompts;
+import com.gonnect.apiaide.prompts.CallerPrompts;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static java.util.Map.of;
+
 /**
- * The {@code RestGPT} class orchestrates the execution of API calls based on user queries using a conversational approach.
+ * The {@code APIOrchestration} class orchestrates the execution of API calls based on user queries using a conversational approach.
  * It integrates the Planner, APISelector, Caller, and ResponseParser components to generate API calling plans,
  * execute API calls, and parse responses iteratively until a stopping condition is met.
  * The class is marked as a Spring service for component scanning and dependency injection.
@@ -42,11 +47,14 @@ public class APIOrchestration {
      * @param input The input containing the user query and scenario details.
      * @return Formatted output of the API calling plan and execution results.
      */
-    public String execute(QueryInput input) {
+    public String run(QueryInput input) {
         String background = "";
-        List<String> conversationHistory = new ArrayList<>();
+        List<Map<String, String>> exampleHistory = new ArrayList<>();
 
-        String plan = planner.generatePlan(input.getQuery());
+        String examplePlan = planner.run(of(
+                "query", input.getQuery(),
+                "history", exampleHistory
+        )).get("result");
 
         int iterations = 0;
         double elapsedTime = 0.0;
@@ -54,13 +62,19 @@ public class APIOrchestration {
         while (shouldContinue(iterations, elapsedTime)) {
             long t1 = System.currentTimeMillis();
 
-            APISelectorRequestInput apiSelectorInput = new APISelectorRequestInput(plan, background);
+            int historySize = exampleHistory.size();
+            List<Map<String, String>> tmpExampleHistory = historySize == 0 ?
+                    List.of() : List.of(exampleHistory.get(historySize));
 
-            String apiPlan = apiSelector.selectAPIs(apiSelectorInput, input.getScenario());
+            APISelectorRequestInput apiSelectorInput = APISelectorRequestInput.builder()
+                    .plan(examplePlan)
+                    .apiSpec(input.getApiSpec()).build();
 
-            APIExecutionRequest executionRequest = buildExecutionRequest(input, apiPlan, background);
+            String apiPlan = apiSelector.run(apiSelectorInput, input.getScenario());
 
-            Map<String, String> executionResult = caller.executeAPIs(executionRequest, conversationHistory);
+            APIExecutionRequest executionRequest = buildExecutionRequest(input, apiPlan, background,input.getApiSpec());
+
+            Map<String, String> executionResult = caller.run(executionRequest, exampleHistory);
 
             ParserRequestInput parserInput = buildParserInput(input, executionResult.get("conversation"));
 
@@ -68,7 +82,10 @@ public class APIOrchestration {
 
             background += parsedResult + "\n";
 
-            plan = planner.generatePlan(parsedResult);
+            examplePlan = planner.run(of(
+                    "input", input.getQuery(),
+                    "history", exampleHistory
+            )).get("result");
 
             long t2 = System.currentTimeMillis();
 
@@ -76,7 +93,7 @@ public class APIOrchestration {
             elapsedTime += (t2 - t1) / 1000.0;
         }
 
-        return formatOutput(plan);
+        return formatOutput(examplePlan);
     }
 
     /**
@@ -108,12 +125,16 @@ public class APIOrchestration {
      * @param background The background information.
      * @return The constructed API execution request.
      */
-    private APIExecutionRequest buildExecutionRequest(QueryInput input, String apiPlan, String background) {
+    private APIExecutionRequest buildExecutionRequest(QueryInput input,
+                                                      String apiPlan,
+                                                      String background,
+                                                      ReducedOpenAPISpec apiSpec) {
         APIExecutionRequest request = new APIExecutionRequest();
         request.setBackground(background);
         request.setPlan(apiPlan);
         request.setScenario(input.getScenario());
         request.setParameters(input.getParameters());
+        request.setApiSpec(apiSpec);
         return request;
     }
 

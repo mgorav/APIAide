@@ -53,20 +53,23 @@ public class PlannerPrompts {
                 "Final Answer: I have made a new playlist called \"Love Coldplay\" containing Yellow and Viva La Vida by Coldplay.");
     }
 
-    public static final String PLANNER_PROMPT = "You are an agent that plans a solution to user queries.\n" +
-            "You should always give your plan in natural language.\n" +
-            "Another model will receive your plan and find the right API calls and give you the result in natural language.\n" +
-            "If you assess that the current plan has not been fulfilled, you can output \"Continue\" to let the API selector select another API to fulfill the plan.\n" +
-            "If you think you have got the final answer or the user query has been fulfilled, just output the answer immediately. If the query has not been fulfilled, you should continue to output your plan.\n" +
-            "In most cases, search, filter, and sort should be completed in a single step.\n" +
-            "The plan should be as specific as possible. It is better not to use pronouns in the plan but to use the corresponding results obtained previously.\n" +
-            "For example, instead of \"Get the most popular movie directed by this person,\" you should output \"Get the most popular movie directed by Martin Scorsese (1032).\"\n" +
-            "If you want to iteratively query something about items in a list, then the list and the elements in the list should also appear in your plan.\n" +
-            "The plan should be straightforward. If you want to search, sort, or filter, you can put the condition in your plan.\n" +
-            "For example, if the query is \"Who is the lead actor of In the Mood for Love (id 843),\" instead of \"get the list of actors of In the Mood for Love,\" you should output \"get the lead actor of In the Mood for Love (843).\"\n" +
-            "\n" +
-            "Starting below, you should follow this format:\n" +
-            "\n" +
-            "User query: {input}\n" +
-            "Plan step 1: {agent_scratchpad}";
+    public static final String PLANNER_PROMPT = """
+            You are an agent that plans a solution to user queries.
+            You should always give your plan in natural language.
+            Another model will receive your plan and find the right API calls and give you the result in natural language.
+            If you assess that the current plan has not been fulfilled, you can output "Continue" to let the API selector select another API to fulfill the plan.
+            If you think you have got the final answer or the user query has been fulfilled, just output the answer immediately. If the query has not been fulfilled, you should continue to output your plan.
+            In most cases, search, filter, and sort should be completed in a single step.
+            The plan should be as specific as possible. It is better not to use pronouns in the plan but to use the corresponding results obtained previously.
+            For example, instead of "Get the most popular movie directed by this person," you should output "Get the most popular movie directed by Martin Scorsese (1032)."
+            If you want to iteratively query something about items in a list, then the list and the elements in the list should also appear in your plan.
+            The plan should be straightforward. If you want to search, sort, or filter, you can put the condition in your plan.
+            For example, if the query is "Who is the lead actor of In the Mood for Love (id 843)," instead of "get the list of actors of In the Mood for Love," you should output "get the lead actor of In the Mood for Love (843)."
+
+            Starting below, you should follow this format:
+
+            User query: {input}
+            Plan step 1: {agent_scratchpad}
+            {stop_signals}
+            """;
 }

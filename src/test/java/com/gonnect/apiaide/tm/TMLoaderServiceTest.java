@@ -1,4 +1,4 @@
-package com.gonnect.apiaide.tmdb;
+package com.gonnect.apiaide.tm;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.DefaultResourceLoader;

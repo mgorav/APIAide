@@ -2,28 +2,33 @@ package com.gonnect.apiaide.oas;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gonnect.apiaide.tm.TMService;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.SneakyThrows;
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Service
+@Data
+@Builder
+@AllArgsConstructor
 public class OpenAPISpecUtil {
 
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final Map<String, Map<String, String>> endpoints = new ConcurrentHashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(OpenAPISpecUtil.class);
 
+    private final ObjectMapper mapper;
+    private final List<Map<String, Object>> endpoints;
 
     public List<String> getEndpoints() {
-        List<String> result = new ArrayList<>();
-        endpoints.forEach((path, operations) ->
-                operations.forEach((method, operation) ->
-                        result.add(method + " " + path)));
-        return result;
+        return endpoints.stream()
+                .map(endpointMap -> (String) endpointMap.get("name"))
+                .collect(Collectors.toList());
     }
 
     @SneakyThrows
@@ -95,21 +100,27 @@ public class OpenAPISpecUtil {
 
     public String getOperation(String endpoint) {
         String[] elements = endpoint.split("\\s+");
-        String method = elements[0];
-        String path = elements[1];
+        String method = elements[0].trim();
+        String path = elements[1].trim();
 
-        return endpoints.getOrDefault(path, new ConcurrentHashMap<>()).get(method);
+        return endpoints.stream()
+                .peek(endpointMap -> log.debug("Checking: " + endpointMap.get("name")))
+                .filter(endpointMap -> path.equals(endpointMap.get("name")))
+                .findFirst()
+                .map(endpointMap -> {
+                    String result = (String) endpointMap.get(method);
+                    log.debug(("Found result: " + result));
+                    return result;
+                })
+                .orElse(null);
+
     }
 
     public void addEndpoint(String path, String method, String operation) {
-        endpoints.computeIfAbsent(path, k -> new ConcurrentHashMap<>())
-                .put(method, operation);
+        endpoints.add(Collections.singletonMap("name", path + " " + method));
     }
 
     public void removeEndpoint(String path, String method) {
-        Map<String, String> operations = endpoints.get(path);
-        if (operations != null) {
-            operations.remove(method);
-        }
+        endpoints.removeIf(endpointMap -> (path + " " + method).equals(endpointMap.get("name")));
     }
 }
