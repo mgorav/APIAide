@@ -32,7 +32,7 @@ public class Planner {
     private final EmbeddingStore<TextSegment> store;
     private final EmbeddingModel embeddingModel;
 
-    public Planner(@Qualifier("plannerConversationalChain") ConversationalRetrievalChain chain,
+    public Planner(ConversationalRetrievalChain chain,
                    EmbeddingStore<TextSegment> store,
                    EmbeddingModel embeddingModel) {
         this.chain = chain;

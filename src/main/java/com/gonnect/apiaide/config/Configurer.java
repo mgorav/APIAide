@@ -58,88 +58,14 @@ public class Configurer {
         return interpreter;
     }
 
-    @Bean("apiSelectorChain")
-    ConversationalRetrievalChain apSelectionConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                         Retriever<TextSegment> retriever) {
+    @Bean("chain")
+    ConversationalRetrievalChain conversationalRetrievalChain(ChatLanguageModel chatModel,
+                                                              Retriever<TextSegment> retriever) {
 
         return ConversationalRetrievalChain.builder()
                 .chatLanguageModel(chatModel)
                 .retriever(retriever)
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(API_SELECTOR_PROMPT))
-                .build();
-    }
-
-    @Bean("callerConversationalChain")
-    ConversationalRetrievalChain callerConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                    Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(CALLER_PROMPT))
-                .build();
-    }
-
-
-    @Bean("plannerConversationalChain")
-    ConversationalRetrievalChain plannarConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                     Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(PLANNER_PROMPT))
-                .build();
-    }
-
-    @Bean("codeParsingSchemaConversationalChain")
-    ConversationalRetrievalChain codeParsingSchemaConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                               Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(CODE_PARSING_SCHEMA_TEMPLATE))
-                .build();
-    }
-
-    @Bean("codeParsingResponseConversationalChain")
-    ConversationalRetrievalChain codeParsingResponseConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                                 Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(CODE_PARSING_RESPONSE_TEMPLATE))
-                .build();
-    }
-
-    @Bean("lmParsingConversationalChain")
-    ConversationalRetrievalChain lmParsingConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                       Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(LLM_PARSING_TEMPLATE))
-                .build();
-    }
-
-    @Bean("postprocessConversationalChain")
-    ConversationalRetrievalChain postprocessConversationalRetrievalChain(ChatLanguageModel chatModel,
-                                                                         Retriever<TextSegment> retriever) {
-
-        return ConversationalRetrievalChain.builder()
-                .chatLanguageModel(chatModel)
-                .retriever(retriever)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(50000))
-                .promptTemplate(from(POSTPROCESS_TEMPLATE))
                 .build();
     }
 
@@ -160,7 +86,6 @@ public class Configurer {
 
         return EmbeddingStoreRetriever.from(embeddingStore, embeddingModel, maxResultsRetrieved, minScore);
     }
-
 
 
     /**

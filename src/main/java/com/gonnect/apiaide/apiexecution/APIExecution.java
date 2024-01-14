@@ -23,17 +23,17 @@ import static com.gonnect.apiaide.prompts.CallerPrompts.CALLER_PROMPT;
 @Service
 public class APIExecution {
 
-    private final ConversationalRetrievalChain callerChain;
+    private final ConversationalRetrievalChain chain;
     private final ResponseParser responseParser;
 
     /**
      * Constructor for the Caller class.
      *
-     * @param callerConversationalChain The ConversationalRetrievalChain used for API execution.
-     * @param responseParser            The ResponseParser used for parsing API responses.
+     * @param chain          The ConversationalRetrievalChain used for API execution.
+     * @param responseParser The ResponseParser used for parsing API responses.
      */
-    public APIExecution(ConversationalRetrievalChain callerConversationalChain, ResponseParser responseParser) {
-        this.callerChain = callerConversationalChain;
+    public APIExecution(ConversationalRetrievalChain chain, ResponseParser responseParser) {
+        this.chain = chain;
         this.responseParser = responseParser;
     }
 
@@ -47,13 +47,18 @@ public class APIExecution {
     public Map<String, String> run(APIExecutionRequest input, List<Map<String, String>> conversationalChains) {
         // Create a prompt template with API documentation
         PromptTemplate template = PromptTemplate.from(CALLER_PROMPT);
-        Prompt prompt = template.apply(Map.of("api_docs", generateAPIDocs(input)));
+        Prompt prompt = template.apply(Map.of(
+                "api_docs", generateAPIDocs(input),
+                "\" and \"", "",
+                "user_id", "1234",
+                "person_id", "5678"
+        ));
 
         // Execute the API calls in a conversational chain
-        String conversation = callerChain.execute(prompt.text());
+        String conversation = chain.execute(prompt.text());
         while (!isExecutionComplete(conversation)) {
             String nextPrompt = getNextPrompt(conversation);
-            conversation += callerChain.execute(nextPrompt);
+            conversation += chain.execute(nextPrompt);
         }
 
         // Use the ResponseParser to parse the API response

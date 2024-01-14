@@ -2,7 +2,6 @@ package com.gonnect.apiaide.oas;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gonnect.apiaide.tm.TMService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +20,9 @@ import java.util.stream.Collectors;
 public class OpenAPISpecUtil {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAPISpecUtil.class);
+
+    public record EndpointInfo(String method, String path) {
+    }
 
     private final ObjectMapper mapper;
     private final List<Map<String, Object>> endpoints;
@@ -98,23 +100,143 @@ public class OpenAPISpecUtil {
                 .collect(Collectors.toList());
     }
 
+//    public String getOperation(String endpoint) {
+//        // Trim endpoint string
+//        String trimmedEndpoint = endpoint.trim();
+//
+//        Optional<EndpointInfo> endpointInfo = parseEndpoint(trimmedEndpoint);
+//
+//        String[] elements = trimmedEndpoint.split("\\s+", 2);
+//
+//        // Trim method
+//        String method = elements[0].trim();
+//
+//        if (elements.length > 1) {
+//            elements[1] = elements[1].split("\\?", 2)[0];
+//        }
+//
+//        // Trim path
+//        String path = elements[1].trim();
+//
+//        Optional<String> matchedOperation = endpoints.stream()
+//                .filter(endpointMap -> {
+//                    // Check for null and then trim and make case insensitive comparison
+//                    log.info("endpointMap.get(\"name\")=" + endpointMap.get("name"));
+//                    String trimmedName = (endpointMap.get("name") != null) ? endpointMap.get("name").toString().trim() : null;
+//
+//                    String[] trimmedNameSplit = trimmedName.split("\\s+", 2);
+//
+//                    // Trim method
+//                    String trimmedMethod = elements[0].trim();
+//
+//                    if (trimmedNameSplit.length > 1) {
+//                        trimmedNameSplit[1] = trimmedNameSplit[1].split("\\?", 2)[0];
+//                    }
+//
+//                    // Trim path
+//                    String trimmedPath = elements[1].trim();
+//
+//
+//                    boolean flag = path.equalsIgnoreCase(trimmedPath);
+//
+//                    log.info("path.equalsIgnoreCase(trimmedName)=" + flag);
+//
+//                    return flag;
+//                })
+//                .findFirst()
+//                .map(endpointMap -> {
+//                    log.debug("Matched endpoint: " + endpointMap);
+//
+//                    // Trim operation
+//                    Object operationObject = endpointMap.get(method);
+//
+//                    if (operationObject == null) {
+//                        log.warn("No operation docs found for " + method);
+//                        return "No docs for this operation";
+//                    }
+//
+//                    String operation = operationObject.toString().trim();
+//
+//                    log.debug("Found operation: " + operation);
+//
+//                    return operation;
+//                });
+//
+//        return matchedOperation.orElseGet(() -> {
+//            log.error("No matching endpoint found for path: " + path);
+//            return null;
+//        });
+//    }
+
     public String getOperation(String endpoint) {
-        String[] elements = endpoint.split("\\s+");
+        String trimmedEndpoint = endpoint.trim();
+        Optional<EndpointInfo> endpointInfo = parseEndpoint(trimmedEndpoint);
+
+        String[] elements = splitEndpoint(trimmedEndpoint);
+
         String method = elements[0].trim();
         String path = elements[1].trim();
 
+        Optional<String> matchedOperation = findMatchingEndpoint(method, path);
+
+        return matchedOperation.orElseGet(() -> {
+            log.error("No matching endpoint found for path: " + path);
+            return null;
+        });
+    }
+
+    private String[] splitEndpoint(String endpoint) {
+        String[] elements = endpoint.split("\\s+", 2);
+
+        if (elements.length > 1) {
+            elements[1] = elements[1].split("\\?", 2)[0];
+        }
+
+        return elements;
+    }
+
+    private Optional<String> findMatchingEndpoint(String method, String path) {
         return endpoints.stream()
-                .peek(endpointMap -> log.debug("Checking: " + endpointMap.get("name")))
-                .filter(endpointMap -> path.equals(endpointMap.get("name")))
+                .filter(endpointMap -> {
+                    String trimmedName = getTrimmedName(endpointMap);
+
+                    boolean flag = path.equalsIgnoreCase(trimmedName);
+                    log.info("path.equalsIgnoreCase(trimmedName)=" + flag);
+
+                    return flag;
+                })
                 .findFirst()
                 .map(endpointMap -> {
-                    String result = (String) endpointMap.get(method);
-                    log.debug(("Found result: " + result));
-                    return result;
-                })
-                .orElse(null);
-
+                    log.debug("Matched endpoint: " + endpointMap);
+                    return getOperationFromMap(endpointMap, method);
+                });
     }
+
+    private String getTrimmedName(Map<String, Object> endpointMap) {
+        String trimmedName = (endpointMap.get("name") != null) ? endpointMap.get("name").toString().trim() : null;
+        String[] trimmedNameSplit = trimmedName.split("\\s+", 2);
+
+        if (trimmedNameSplit.length > 1) {
+            trimmedNameSplit[1] = trimmedNameSplit[1].split("\\?", 2)[0];
+        }
+
+        return trimmedNameSplit[1];
+    }
+
+    private String getOperationFromMap(Map<String, Object> endpointMap, String method) {
+        Object operationObject = endpointMap.get(method);
+
+        if (operationObject == null) {
+            log.warn("No operation docs found for " + method);
+            return "No docs for this operation";
+        }
+
+        String operation = operationObject.toString().trim();
+        log.debug("Found operation: " + operation);
+
+        return operation;
+    }
+
 
     public void addEndpoint(String path, String method, String operation) {
         endpoints.add(Collections.singletonMap("name", path + " " + method));
@@ -123,4 +245,20 @@ public class OpenAPISpecUtil {
     public void removeEndpoint(String path, String method) {
         endpoints.removeIf(endpointMap -> (path + " " + method).equals(endpointMap.get("name")));
     }
+
+    public static Optional<EndpointInfo> parseEndpoint(String trimmedEndpoint) {
+        String[] elements = trimmedEndpoint.split("\\s+", 2);
+
+        if (elements.length > 0) {
+            String method = elements[0].trim();
+
+            if (elements.length > 1) {
+                String path = elements[1].split("\\?", 2)[0].trim();
+                return Optional.of(new EndpointInfo(method, path));
+            }
+        }
+
+        return Optional.empty();
+    }
+
 }

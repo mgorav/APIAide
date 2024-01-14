@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,5 +20,9 @@ public class APISelectorRequestInput {
     private String background = "";
 
     private ReducedOpenAPISpec apiSpec;
+
+    private List<HistoryTuple> history = new ArrayList<>();
+
+    private HistoryTuple lastHistory;
 
 }

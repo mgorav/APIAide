@@ -4,6 +4,7 @@ import com.gonnect.apiaide.apiexecution.APIExecution;
 import com.gonnect.apiaide.apiexecution.APIExecutionRequest;
 import com.gonnect.apiaide.apiselector.APISelector;
 import com.gonnect.apiaide.apiselector.APISelectorRequestInput;
+import com.gonnect.apiaide.apiselector.HistoryTuple;
 import com.gonnect.apiaide.oas.ReducedOpenAPISpec;
 import com.gonnect.apiaide.parser.ParserRequestInput;
 import com.gonnect.apiaide.parser.ResponseParser;
@@ -59,26 +60,53 @@ public class APIOrchestration {
         int iterations = 0;
         double elapsedTime = 0.0;
 
+        // Instance variable
+        List<HistoryTuple> history = new ArrayList<>();
+
+        HistoryTuple lastHistory = null;
+
         while (shouldContinue(iterations, elapsedTime)) {
             long t1 = System.currentTimeMillis();
 
+            // Create temporary history with just the latest step
             int historySize = exampleHistory.size();
-            List<Map<String, String>> tmpExampleHistory = historySize == 0 ?
-                    List.of() : List.of(exampleHistory.get(historySize));
+            List<Map<String, String>> tmpExampleHistory = new ArrayList<>();
+            if (historySize > 0) {
+                tmpExampleHistory.add(exampleHistory.get(historySize - 1));
+
+                // Pass temporary history to planner
+                examplePlan = planner.run(Map.of(
+                        "input", input.getQuery(),
+                        "history", tmpExampleHistory
+                )).get("result");
+            }
+
 
             APISelectorRequestInput apiSelectorInput = APISelectorRequestInput.builder()
                     .plan(examplePlan)
+                    .history(history)
+                    .lastHistory(lastHistory)
                     .apiSpec(input.getApiSpec()).build();
 
             String apiPlan = apiSelector.run(apiSelectorInput, input.getScenario());
 
-            APIExecutionRequest executionRequest = buildExecutionRequest(input, apiPlan, background,input.getApiSpec());
+            lastHistory = getLatestHistoryTuple(history);
+            apiSelectorInput.setLastHistory(lastHistory);
+
+
+            APIExecutionRequest executionRequest = buildExecutionRequest(input, apiPlan, background, input.getApiSpec());
 
             Map<String, String> executionResult = caller.run(executionRequest, exampleHistory);
 
             ParserRequestInput parserInput = buildParserInput(input, executionResult.get("conversation"));
 
             String parsedResult = responseParser.parse(parserInput).get("output");
+
+            // Add latest step to full history
+            exampleHistory.add(Map.of(
+                    "plan", examplePlan,
+                    "execution_res", parsedResult
+            ));
 
             background += parsedResult + "\n";
 
@@ -94,6 +122,18 @@ public class APIOrchestration {
         }
 
         return formatOutput(examplePlan);
+    }
+
+    private HistoryTuple getLatestHistoryTuple(List<HistoryTuple> history) {
+        if (history.isEmpty()) {
+            return null;
+        }
+        return history.get(history.size() - 1);
+    }
+
+    private void addToHistory(String plan, String apiCall, String result, List<HistoryTuple> history) {
+
+        history.add(new HistoryTuple(plan, apiCall, result));
     }
 
     /**

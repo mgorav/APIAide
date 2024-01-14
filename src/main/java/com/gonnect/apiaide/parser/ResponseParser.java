@@ -1,7 +1,6 @@
 package com.gonnect.apiaide.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gonnect.apiaide.prompts.ParsingPrompts;
 import com.gonnect.apiaide.python.PythonExecutionService;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.model.input.Prompt;
@@ -51,32 +50,21 @@ public class ResponseParser {
 
     private final Logger logger = LoggerFactory.getLogger(ResponseParser.class);
     private final PythonExecutionService pythonService;
-    private final Map<PromptTemplate, ConversationalRetrievalChain> llm;
+    private final ConversationalRetrievalChain chain;
 
     /**
      * Constructs a ResponseParser with the specified PythonExecutionService.
      *
-     * @param pythonService                          The PythonExecutionService to use for executing Python code.
-     * @param codeParsingSchemaConversationalChain   Chain for parsing API response based on JSON schema and query.
-     * @param codeParsingResponseConversationalChain Chain for parsing API response based on JSON response snippet.
-     * @param lmParsingConversationalChain           Chain for directly parsing and summarizing response using LLM.
-     * @param postprocessConversationalChain         Chain for post-processing truncated output if needed
+     * @param pythonService The PythonExecutionService to use for executing Python code.
+     * @param chain         Chain for parsing API response based on JSON schema and query.
+     *                      Chain for directly parsing and summarizing response using LLM.
+     *                      Chain for post-processing truncated output if needed
      */
     public ResponseParser(PythonExecutionService pythonService,
-                          ConversationalRetrievalChain codeParsingSchemaConversationalChain,
-                          ConversationalRetrievalChain codeParsingResponseConversationalChain,
-                          ConversationalRetrievalChain lmParsingConversationalChain,
-                          ConversationalRetrievalChain postprocessConversationalChain) {
+                          ConversationalRetrievalChain chain) {
         this.pythonService = pythonService;
+        this.chain = chain;
 
-
-        // Mapping of prompt templates to conversational chains
-        this.llm = of(
-                ParsingPrompts.codeParsingSchemaTemplate, codeParsingSchemaConversationalChain,
-                ParsingPrompts.codeParsingResponseTemplate, codeParsingResponseConversationalChain,
-                ParsingPrompts.llmParsingTemplate, lmParsingConversationalChain,
-                ParsingPrompts.postprocessTemplate, postprocessConversationalChain
-        );
     }
 
     /**
@@ -90,13 +78,13 @@ public class ResponseParser {
 
 
         // Try different parsing strategies
-        String output = tryCodeTemplate(input, codeParsingSchemaTemplate, llm)
-                .orElse(tryCodeTemplate(input, codeParsingResponseTemplate, llm)
-                        .orElse(tryLLMParsing(input, llmParsingTemplate, llm)));
+        String output = tryCodeTemplate(input, codeParsingSchemaTemplate)
+                .orElse(tryCodeTemplate(input, codeParsingResponseTemplate)
+                        .orElse(tryLLMParsing(input, llmParsingTemplate)));
 
         // Post-process if output length exceeds maximum allowed
         if (output.length() > MAX_OUTPUT_LENGTH) {
-            postProcess(output, from(POSTPROCESS_TEMPLATE), llm);
+            postProcess(output, from(POSTPROCESS_TEMPLATE));
         }
 
         return of(ParsingConstants.OUTPUT_KEY, output);
@@ -122,14 +110,12 @@ public class ResponseParser {
      *
      * @param input    The RequestInput containing query and API information.
      * @param template The PromptTemplate for generating Python code.
-     * @param llm      Mapping of prompt templates to conversational chains.
      * @return An optional output string if successful, otherwise empty.
      */
-    private Optional<String> tryCodeTemplate(ParserRequestInput input, PromptTemplate template,
-                                             Map<PromptTemplate, ConversationalRetrievalChain> llm) {
-        String code = generateCode(input, template, llm);
+    private Optional<String> tryCodeTemplate(ParserRequestInput input, PromptTemplate template) {
+        String code = generateCode(input, template);
         String encodedJson = encodeInput(input.getJson());
-        String output = executePythonCode(code, encodedJson, llm);
+        String output = executePythonCode(code, encodedJson);
         if (output != null) {
             trackIntermediateStep(code, output);
         }
@@ -141,12 +127,10 @@ public class ResponseParser {
      *
      * @param input              The RequestInput containing query and API information.
      * @param llmParsingTemplate The PromptTemplate for LLM parsing.
-     * @param llm                Mapping of prompt templates to conversational chains.
      * @return The parsed output based on LLM.
      */
-    private String tryLLMParsing(ParserRequestInput input, PromptTemplate llmParsingTemplate,
-                                 Map<PromptTemplate, ConversationalRetrievalChain> llm) {
-        return llm.get(llmParsingTemplate).execute(llmParsingTemplate.apply(input).text());
+    private String tryLLMParsing(ParserRequestInput input, PromptTemplate llmParsingTemplate) {
+        return chain.execute(llmParsingTemplate.apply(input).text());
     }
 
     /**
@@ -154,11 +138,9 @@ public class ResponseParser {
      *
      * @param output              The output to post-process.
      * @param postprocessTemplate The PromptTemplate for post-processing.
-     * @param llm                 Mapping of prompt templates to conversational chains.
      */
-    private void postProcess(String output, PromptTemplate postprocessTemplate,
-                             Map<PromptTemplate, ConversationalRetrievalChain> llm) {
-        llm.get(postprocessTemplate).execute(postprocessTemplate.apply(output).text());
+    private void postProcess(String output, PromptTemplate postprocessTemplate) {
+        chain.execute(postprocessTemplate.apply(output).text());
     }
 
     /**
@@ -166,15 +148,13 @@ public class ResponseParser {
      *
      * @param input    The RequestInput containing query and API information.
      * @param template The PromptTemplate for generating Python code.
-     * @param llm      Mapping of prompt templates to conversational chains.
      * @return The generated Python code.
      */
-    private String generateCode(ParserRequestInput input, PromptTemplate template,
-                                Map<PromptTemplate, ConversationalRetrievalChain> llm) {
+    private String generateCode(ParserRequestInput input, PromptTemplate template) {
         Prompt prompt = template.apply(of("query", input.getQuery(), "json", input.getJson(),
                 "api_path", input.getApiPath(), "api_description", input.getApiDescription(),
                 "api_param", input.getApiParam(), "response_description", input.getResponseDescription()));
-        return llm.get(template).execute(prompt.text());
+        return chain.execute(prompt.text());
     }
 
     /**
@@ -182,12 +162,10 @@ public class ResponseParser {
      *
      * @param code The Python code to execute.
      * @param json The encoded JSON input for the Python code.
-     * @param llm  Mapping of prompt templates to conversational chains.
      * @return The output of the Python code.
      */
     @SneakyThrows
-    private String executePythonCode(String code, String json,
-                                     Map<PromptTemplate, ConversationalRetrievalChain> llm) {
+    private String executePythonCode(String code, String json) {
         return pythonService.execute(code, of("data", new ObjectMapper().readValue(json, Map.class))).toString();
     }
 

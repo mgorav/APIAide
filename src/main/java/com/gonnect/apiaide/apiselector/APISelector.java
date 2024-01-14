@@ -7,6 +7,7 @@ import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,21 +21,34 @@ import static java.util.Map.of;
 @Service
 public class APISelector {
 
-    private final ConversationalRetrievalChain apiSelectorChain;
+    private final ConversationalRetrievalChain chain;
     private final Map<String, String> iclExamples;
 
-    public APISelector(ConversationalRetrievalChain apiSelectorChain) {
-        this.apiSelectorChain = apiSelectorChain;
+    public APISelector(ConversationalRetrievalChain chain) {
+        this.chain = chain;
         this.iclExamples = Map.copyOf(ICL_EXAMPLES);
     }
 
     public String run(APISelectorRequestInput input, String scenario) {
+        // 1. Construct scratchpad
+        String scratchpad = constructScratchpad(input.getHistory());
+        // 2. Build prompt with scratchpad
         Prompt prompt = buildPrompt(input, scenario);
-        String output = apiSelectorChain.execute(prompt.text());
+        // 3. Execute prompt
+        String output = chain.execute(prompt.text());
 
         while (!apiIsValid(input, output)) {
+            // 4. Validate output
             String invalidMessage = output + "\nInvalid API. Please try again.";
-            output = apiSelectorChain.execute(invalidMessage);
+            output = chain.execute(invalidMessage);
+        }
+
+        // 5. Add latest interaction to history
+        if (input.getLastHistory() != null) {
+            HistoryTuple tuple = new HistoryTuple(input.getPlan(),
+                    input.getLastHistory().getApiCall(),
+                    input.getLastHistory().getResponse());
+            input.getHistory().add(tuple);
         }
 
         return formatOutput(output);
@@ -55,7 +69,7 @@ public class APISelector {
         return iclExamples.getOrDefault(scenario, "");
     }
 
-        private Prompt buildPrompt(APISelectorRequestInput input, String scenario) {
+    private Prompt buildPrompt(APISelectorRequestInput input, String scenario) {
         String endpoints = generateEndpointsInfo(input.getApiSpec());
         String background = input.getBackground() == null ? "" : input.getBackground();
         String plan = input.getPlan() == null ? "" : input.getPlan();
@@ -67,8 +81,25 @@ public class APISelector {
                 "background", background,
                 "plan", plan,
                 "agent_scratchpad", "",
-                "icl_examples", iclExamples
+                "icl_examples", iclExamples,
+                "user_id", "1234",
+                "person_id", "5678",
+                "\" and \"", ""
         ));
+    }
+
+    private String constructScratchpad(List<HistoryTuple> history) {
+
+        StringBuilder sb = new StringBuilder();
+
+        for (HistoryTuple tuple : history) {
+            sb.append(tuple.getPlan());
+            sb.append(tuple.getApiCall());
+            sb.append(tuple.getResponse());
+        }
+
+        return sb.toString();
+
     }
 
 
